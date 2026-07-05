@@ -368,7 +368,8 @@ The Chainsmokers - Closer</pre>
       <span>💡 行をクリック＝コピーして完了</span>
       <span>Shift＋クリック＝コピーのみ（完了にしない）</span>
       <span>○＝完了の切り替えのみ（コピーしない）</span>
-      <span><kbd>N</kbd>＝次の未完了曲をコピー</span>
+      <span><kbd>R</kbd>＝表示中のランダム曲をコピー</span>
+      <span>⟲＝別の曲を引き直し</span>
     </div>
   </section>
 </main>
@@ -536,7 +537,7 @@ function setDone(t,val){
       if(gel)updateGroupHead(gel);
     }
   }
-  updateProgress();updateNext();save();
+  updateProgress();updateRand();save();
 }
 
 function updateGroupHead(gel){
@@ -558,20 +559,30 @@ function updateProgress(){
   $('pcount').textContent=num(doneCount)+' / '+num(total)+'（残り '+num(total-doneCount)+'）';
 }
 
-function nextTask(){
-  for(var i=0;i<tasks.length;i++)if(isSong(tasks[i])&&!tasks[i].done)return tasks[i];
-  return null;
+/* ---------- ランダマイザ ----------
+   未完了の曲からランダムに 1 曲を選んで表示。
+   コピーすると完了になり、自動で次の 1 曲を抽選する。 */
+var randPick=null;
+function drawRandom(exclude){
+  var pool=[];
+  for(var i=0;i<tasks.length;i++){
+    var t=tasks[i];
+    if(isSong(t)&&!t.done&&t!==exclude)pool.push(t);
+  }
+  if(!pool.length){randPick=(exclude&&!exclude.done)?exclude:null;return;}
+  randPick=pool[Math.floor(Math.random()*pool.length)];
 }
-function updateNext(){
-  var t=nextTask(),btn=$('nextBtn');
-  if(!t){
+function updateRand(){
+  if(!randPick||randPick.done)drawRandom(null);
+  var btn=$('randBtn');
+  if(!randPick){
     btn.classList.add('alldone');
-    $('nextTitle').textContent='🎉 すべての曲をコピーしました！';
-    $('nextArtist').textContent='おつかれさまでした';
+    $('randTitle').textContent='🎉 すべての曲をコピーしました！';
+    $('randArtist').textContent='おつかれさまでした';
   }else{
     btn.classList.remove('alldone');
-    $('nextTitle').textContent=t.title;
-    $('nextArtist').textContent=t.artist+'　—　クリックでコピーして完了';
+    $('randTitle').textContent=randPick.title;
+    $('randArtist').textContent=randPick.artist;
   }
 }
 
@@ -772,18 +783,23 @@ $('search').addEventListener('input',debounce(function(e){
 
 $('fmtSel').addEventListener('change',function(e){fmt=e.target.value;save();});
 
-$('nextBtn').addEventListener('click',function(){
-  var t=nextTask();
-  if(t)copyTask(t,true);
+$('randBtn').addEventListener('click',function(){
+  if(randPick&&!randPick.done)copyTask(randPick,true);
+});
+
+$('rerollBtn').addEventListener('click',function(){
+  if(!tasks.length)return;
+  drawRandom(randPick);
+  updateRand();
 });
 
 document.addEventListener('keydown',function(e){
-  if(e.key!=='n'&&e.key!=='N')return;
+  var k=(e.key||'').toLowerCase();
+  if(k!=='r'&&k!=='n')return;
   var tag=(e.target.tagName||'').toLowerCase();
   if(tag==='input'||tag==='textarea'||tag==='select')return;
   if(!tasks.length)return;
-  var t=nextTask();
-  if(t)copyTask(t,true);
+  if(randPick&&!randPick.done)copyTask(randPick,true);
 });
 
 $('resetBtn').addEventListener('click',function(){
@@ -791,7 +807,8 @@ $('resetBtn').addEventListener('click',function(){
   if(!confirm('完了状態をすべてリセットしますか？（読み込んだリストはそのまま残ります）'))return;
   for(var i=0;i<tasks.length;i++)tasks[i].done=false;
   doneCount=0;
-  render();updateProgress();updateNext();save();
+  drawRandom(null);
+  render();updateProgress();updateRand();save();
   toast('進捗をリセットしました');
 });
 
@@ -851,8 +868,9 @@ function loadFile(file){
     $('fname').title=fileName;
     $('fstat').textContent=num(tasks.length)+'曲';
     $('progressRow').classList.add('on');
-    $('nextRow').classList.add('on');
-    updateTabs();render();updateProgress();updateNext();
+    $('randRow').classList.add('on');
+    randPick=null;
+    updateTabs();render();updateProgress();updateRand();
     toast(restored?'✅ 前回の進捗を復元しました（'+num(doneCount)+' / '+num(tasks.length)+'）':'📄 '+truncate(fileName,28)+' を読み込みました（'+num(tasks.length)+'曲）');
   }).catch(function(){
     toast('ファイルを読み込めませんでした',true);
