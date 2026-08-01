@@ -1,0 +1,37 @@
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+html, body { margin: 0; padding: 0; }
+body {
+  min-block-size: 100vh;
+  background:
+    radial-gradient(circle at 8% 0%, var(--glow-1), transparent 28rem),
+    radial-gradient(circle at 96% 12%, var(--glow-2), transparent 30rem),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: Inter, "Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", Meiryo, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  transition: background-color .25s, color .25s;
+}
+button, input, select { font: inherit; color: inherit; }
+button { border: 0; cursor: pointer; }
+button, select, input { -webkit-tap-highlight-color: transparent; }
+button:disabled { cursor: default; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+kbd {
+  border: 1px solid var(--border-strong);
+  border-block-end-width: 2px;
+  border-radius: 6px;
+  background: var(--panel-2);
+  padding: 1px 6px;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 10px;
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}

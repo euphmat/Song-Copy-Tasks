@@ -1,0 +1,123 @@
+.app-header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 30;
+  border-block-end: 1px solid var(--border);
+  background: var(--panel-glass);
+  box-shadow: 0 10px 34px color-mix(in srgb, var(--bg) 35%, transparent);
+  backdrop-filter: blur(20px) saturate(140%);
+}
+.header-inner { max-inline-size: 1120px; margin-inline: auto; padding: 12px 20px; }
+.topline { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; min-inline-size: 0; }
+.brand-mark {
+  display: grid;
+  place-items: center;
+  inline-size: 36px;
+  block-size: 36px;
+  flex: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent-2) 25%, transparent);
+  color: var(--accent-ink);
+  font-size: 20px;
+  font-weight: 900;
+}
+.brand-copy { display: flex; flex-direction: column; line-height: 1.15; }
+.brand-copy strong { font-size: 16px; letter-spacing: .015em; }
+.brand-copy small { margin-block-start: 4px; color: var(--faint); font-size: 10px; letter-spacing: .08em; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.theme-control, .header-button {
+  min-block-size: 38px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.theme-control { display: flex; align-items: center; gap: 7px; padding-inline-start: 11px; color: var(--muted); }
+.theme-dot { inline-size: 9px; block-size: 9px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 0 0 3px var(--accent-soft); }
+.control-label { color: var(--faint); font-size: 11px; }
+.theme-control select {
+  max-inline-size: 155px;
+  block-size: 36px;
+  border: 0;
+  background: transparent;
+  padding: 0 28px 0 0;
+  font-weight: 700;
+  outline: 0;
+  cursor: pointer;
+}
+.theme-control select option { background: var(--panel); color: var(--text); }
+.header-button { padding: 0 13px; color: var(--muted); font-weight: 700; }
+.header-button:hover { border-color: var(--accent-line); background: var(--panel-2); color: var(--text); }
+
+.workspace-header {
+  display: grid;
+  grid-template-columns: minmax(320px, .85fr) minmax(380px, 1.15fr);
+  gap: 10px;
+  margin-block-start: 10px;
+}
+.file-card, .next-card {
+  min-inline-size: 0;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
+}
+.file-card { display: grid; grid-template-columns: auto minmax(110px, .7fr) minmax(150px, 1fr) auto; align-items: center; gap: 10px; padding: 9px 10px; }
+.file-icon {
+  display: grid;
+  place-items: center;
+  inline-size: 30px;
+  block-size: 30px;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+}
+.file-copy { display: flex; min-inline-size: 0; flex-direction: column; line-height: 1.25; }
+.fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+.file-copy small { color: var(--faint); font-size: 10.5px; }
+.progress-summary { display: flex; min-inline-size: 0; flex-direction: column; gap: 4px; }
+.pbar { block-size: 6px; overflow: hidden; border-radius: 99px; background: var(--panel-2); }
+.pbar i { display: block; inline-size: 0; block-size: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent-2), var(--accent)); transition: inline-size .3s ease; }
+#pcount { color: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.quiet-button { border-radius: 9px; background: transparent; padding: 6px 8px; color: var(--faint); font-size: 10.5px; white-space: nowrap; }
+.quiet-button:hover { background: var(--panel-2); color: var(--text); }
+.quiet-button.danger:hover { background: var(--danger-soft); color: var(--danger); }
+
+.next-card { display: flex; overflow: hidden; }
+#randBtn { display: flex; flex: 1; align-items: center; gap: 10px; min-inline-size: 0; background: transparent; padding: 9px 12px; text-align: start; }
+#randBtn:hover { background: var(--accent-soft); }
+#randBtn .shuffle { display: grid; place-items: center; inline-size: 30px; block-size: 30px; flex: none; border-radius: 9px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--accent-ink); font-size: 17px; font-weight: 900; }
+#randBtn .nlabel { display: grid; flex: 1; min-inline-size: 0; line-height: 1.25; }
+#randBtn .nlabel small { color: var(--accent); font-size: 8.5px; font-weight: 900; letter-spacing: .16em; }
+#randBtn .nt, #randBtn .na { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#randBtn .nt { font-size: 12.5px; }
+#randBtn .na { color: var(--muted); font-size: 10.5px; }
+#randBtn .do { flex: none; color: var(--faint); font-size: 10px; font-weight: 700; white-space: nowrap; }
+#randBtn:hover .do { color: var(--accent); }
+#randBtn.alldone .nt { color: var(--accent); }
+#randBtn.alldone .do { visibility: hidden; }
+#rerollBtn { inline-size: 42px; flex: none; border-inline-start: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 19px; }
+#rerollBtn:hover { background: var(--panel-2); color: var(--accent); }
+
+@media (max-width: 850px) {
+  .workspace-header { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  .header-inner { padding: 10px 13px; }
+  .topline { align-items: flex-start; }
+  .brand-copy small, .control-label, .header-button span { display: none; }
+  .brand-mark { inline-size: 34px; block-size: 34px; }
+  .brand-copy strong { font-size: 14px; }
+  .header-actions { gap: 5px; }
+  .theme-control { padding-inline-start: 8px; }
+  .theme-control select { max-inline-size: 112px; font-size: 12px; }
+  .header-button { inline-size: 38px; overflow: hidden; padding: 0; font-size: 0; }
+  .header-button::after { content: "↗"; font-size: 17px; }
+  .file-card { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .progress-summary { grid-column: 1 / -1; grid-row: 2; }
+  #pcount { align-self: flex-end; margin-block-start: -1px; }
+  .quiet-button { grid-column: 3; grid-row: 1; font-size: 0; }
+  .quiet-button::after { content: "リセット"; font-size: 10px; }
+  #randBtn .do { display: none; }
+}

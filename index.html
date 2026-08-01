@@ -1,1091 +1,136 @@
 <!DOCTYPE html>
-<html lang="ja" dir="ltr">
+<html lang="ja" dir="ltr" data-theme="midnight">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark">
-<title>曲コピータスク — Spotify 検索用リスト管理</title>
-<style>
-/* ============================================================
-   モノクローム基調 + 局所的なアクセントカラー
-   - グレースケール: 背景・パネル・文字・境界線・タブ
-   - グリーン: 進捗/完了/「次の曲」など前進を表す要素のみ
-   - アンバー: 例外の注意喚起のみ
-   - レッド: エラー/リセットのみ
-   ============================================================ */
-:root{
-  --bg:#151515;
-  --bg-soft:#191919;
-  --panel:#1e1e1e;
-  --panel-2:#262626;
-  --border:rgba(255,255,255,.07);
-  --border-strong:rgba(255,255,255,.15);
-  --text:#e2e2e2;
-  --muted:#9c9c9c;
-  --faint:#6e6e6e;
-  --white-soft:rgba(255,255,255,.85);
-  --accent:#7dbf98;            /* 淡いグリーン（進捗・完了・次へ） */
-  --accent-strong:#9ed4b4;
-  --accent-soft:rgba(125,191,152,.12);
-  --accent-line:rgba(125,191,152,.32);
-  --warn:#d4b98c;              /* 淡いアンバー（例外のみ） */
-  --warn-soft:rgba(212,185,140,.10);
-  --danger:#d09595;            /* 淡いレッド（エラー/リセットのみ） */
-  --radius:12px;
-  --shadow:0 6px 24px rgba(0,0,0,.4);
-}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic UI",Meiryo,sans-serif;
-  font-size:14.5px;
-  line-height:1.55;
-  min-block-size:100vh;
-}
-button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
-input,select{font:inherit;color:var(--text)}
-:focus-visible{outline:2px solid var(--white-soft);outline-offset:2px;border-radius:4px}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-
-/* ---------- header ---------- */
-header{
-  position:sticky;inset-block-start:0;z-index:20;
-  background:rgba(21,21,21,.95);
-  backdrop-filter:blur(8px);
-  border-block-end:1px solid var(--border);
-  padding:14px 20px 12px;
-}
-.hrow{max-inline-size:960px;margin-inline:auto;display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
-.brand{font-size:16.5px;font-weight:600;letter-spacing:.02em;display:flex;align-items:baseline;gap:10px}
-.brand .sub{font-size:12px;font-weight:400;color:var(--faint)}
-#fileBar{display:flex;align-items:center;gap:10px;margin-inline-start:auto;font-size:12.5px;color:var(--muted)}
-#fileBar .fname{color:var(--text);max-inline-size:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.linkbtn{color:var(--muted);font-size:12.5px;padding:4px 9px;border-radius:6px;transition:color .12s,background .12s}
-.linkbtn:hover{color:var(--text);background:var(--panel-2)}
-.linkbtn.danger:hover{color:var(--danger);background:rgba(208,149,149,.08)}
-
-#progressRow{max-inline-size:960px;margin:10px auto 0;display:none;align-items:center;gap:14px}
-#progressRow.on{display:flex}
-.pbar{flex:1;block-size:6px;border-radius:99px;background:var(--panel-2);overflow:hidden}
-.pbar i{display:block;block-size:100%;inline-size:0%;background:var(--accent);border-radius:99px;transition:inline-size .3s ease}
-#pcount{font-size:12.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-
-/* ---------- ランダマイザ（未完了曲からランダムに 1 曲） ---------- */
-#randRow{max-inline-size:960px;margin:12px auto 2px;display:none;align-items:stretch;gap:8px}
-#randRow.on{display:flex}
-#randRow kbd{align-self:center}
-#randBtn{
-  flex:1;display:flex;align-items:center;gap:13px;text-align:start;
-  background:var(--panel);border:1px solid var(--border-strong);
-  border-radius:var(--radius);padding:11px 16px;transition:background .15s,border-color .15s;
-  min-inline-size:0;
-}
-#randBtn:hover{background:var(--panel-2);border-color:rgba(255,255,255,.28)}
-#randBtn .shuffle{font-size:15px;flex:none}
-#randBtn .nlabel{flex:1;min-inline-size:0;overflow:hidden}
-#randBtn .nt{display:block;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#randBtn .na{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#randBtn .do{flex:none;font-size:11.5px;color:var(--faint);white-space:nowrap;transition:color .12s}
-#randBtn:hover .do{color:var(--text)}
-#randBtn.alldone{cursor:default;border-color:var(--accent-line)}
-#randBtn.alldone .nt{color:var(--accent)}
-#randBtn.alldone .do{visibility:hidden}
-#rerollBtn{
-  flex:none;inline-size:46px;display:flex;align-items:center;justify-content:center;
-  background:var(--panel);border:1px solid var(--border-strong);border-radius:var(--radius);
-  font-size:17px;color:var(--muted);transition:background .12s,color .12s;
-}
-#rerollBtn:hover{background:var(--panel-2);color:var(--text)}
-kbd{
-  font-family:inherit;font-size:11px;color:var(--muted);
-  border:1px solid var(--border-strong);border-block-end-width:2px;
-  border-radius:5px;padding:1px 7px;background:var(--panel);white-space:nowrap;
-}
-
-/* ---------- main ---------- */
-main{max-inline-size:960px;margin-inline:auto;padding:20px 20px 80px}
-
-/* empty state / dropzone */
-#empty{padding-block-start:4vh}
-#drop{
-  border:2px dashed var(--border-strong);border-radius:18px;
-  background:var(--bg-soft);
-  padding:56px 28px;text-align:center;transition:border-color .15s,background .15s;
-}
-#drop.over{border-color:var(--accent);background:var(--accent-soft)}
-#drop .ic{font-size:40px;display:block;margin-block-end:14px}
-#drop h2{margin:0 0 6px;font-size:18px;font-weight:600}
-#drop p{margin:0 0 20px;color:var(--muted);font-size:13px}
-#pickBtn{
-  background:var(--panel-2);border:1px solid var(--border-strong);color:var(--text);
-  border-radius:10px;padding:9px 24px;font-weight:600;transition:background .12s,border-color .12s;
-}
-#pickBtn:hover{background:#2e2e2e;border-color:rgba(255,255,255,.25)}
-.fmt{
-  max-inline-size:560px;margin:28px auto 0;text-align:start;
-  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
-  padding:14px 18px;font-size:12.5px;color:var(--muted);
-}
-.fmt b{color:var(--text);font-weight:600}
-.fmt pre{
-  margin:8px 0 4px;padding:10px 12px;border-radius:8px;background:var(--bg);
-  color:var(--faint);font-size:12px;overflow:auto;
-  font-family:Consolas,"SF Mono",Menlo,monospace;
-}
-
-/* tabs & toolbar */
-#tabs{display:flex;gap:4px;border-block-end:1px solid var(--border);margin-block-end:14px}
-.tab{
-  padding:9px 16px 10px;color:var(--faint);font-weight:500;font-size:13.5px;
-  border-block-end:2px solid transparent;margin-block-end:-1px;border-radius:6px 6px 0 0;
-  transition:color .12s,background .12s;
-}
-.tab:hover{color:var(--text);background:var(--panel)}
-.tab.on{color:var(--text);border-block-end-color:var(--white-soft)}
-.tab .n{
-  font-size:11px;color:var(--faint);background:var(--panel-2);
-  border-radius:99px;padding:1px 8px;margin-inline-start:6px;font-variant-numeric:tabular-nums;
-}
-.tab.on .n{color:var(--text)}
-.tab .n.warn{color:var(--warn);background:var(--warn-soft)}
-
-#toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-block-end:16px}
-#search{
-  flex:1;min-inline-size:180px;background:var(--panel);border:1px solid var(--border);
-  border-radius:10px;padding:8px 14px;color:var(--text);transition:border-color .12s;
-}
-#search::placeholder{color:var(--faint)}
-#search:focus{border-color:var(--border-strong);outline:none;background:var(--panel-2)}
-.seg{display:flex;background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-.seg button{padding:7px 14px;font-size:12.5px;color:var(--faint);transition:color .12s,background .12s}
-.seg button:hover{color:var(--text)}
-.seg button.on{background:var(--panel-2);color:var(--text)}
-.fmtsel{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--faint)}
-.fmtsel select{
-  background:var(--panel);border:1px solid var(--border);border-radius:8px;
-  padding:6px 8px;font-size:12.5px;
-}
-
-/* task rows */
-#list{display:flex;flex-direction:column;gap:6px}
-.task{
-  display:flex;align-items:center;gap:12px;
-  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
-  padding:10px 16px 10px 12px;cursor:pointer;
-  transition:border-color .12s,background .12s,opacity .2s;
-}
-.task:hover{border-color:var(--border-strong);background:var(--panel-2)}
-.task:hover .copyhint{opacity:1}
-.task .body{flex:1;min-inline-size:0}
-.task .line1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
-.task .title{font-weight:600;font-size:14.5px}
-.task .extra{
-  font-size:11px;color:var(--faint);background:var(--bg);
-  border-radius:6px;padding:1px 8px;white-space:nowrap;
-}
-.task .dup{font-size:11px;color:var(--muted);background:var(--panel-2);border:1px solid var(--border);border-radius:6px;padding:0 7px}
-.task .line2{font-size:12.5px;color:var(--muted);margin-block-start:1px}
-.copyhint{font-size:11px;color:var(--faint);opacity:0;transition:opacity .12s;white-space:nowrap}
-.check{
-  flex:none;inline-size:24px;block-size:24px;border-radius:50%;
-  border:1.5px solid var(--border-strong);
-  display:flex;align-items:center;justify-content:center;
-  font-size:13px;color:transparent;transition:all .12s;
-}
-.check::after{content:"✓"}
-.check:hover{border-color:var(--accent);color:var(--faint)}
-.task.done{opacity:.5}
-.task.done .title{text-decoration:line-through;text-decoration-color:var(--faint);color:var(--muted)}
-.task.done .check{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
-
-/* exception rows */
-.task.ex .title{font-family:Consolas,"SF Mono",Menlo,monospace;font-size:13px;word-break:break-all;font-weight:500}
-.exnote{font-size:11.5px;color:var(--warn);margin-block-start:3px}
-.notebox{
-  background:var(--warn-soft);border:1px solid rgba(212,185,140,.2);border-radius:var(--radius);
-  padding:10px 16px;font-size:12.5px;color:var(--warn);margin-block-end:4px;
-}
-
-/* artist groups */
-.group{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.ghead{
-  inline-size:100%;display:flex;align-items:center;gap:12px;
-  padding:11px 16px;text-align:start;transition:background .12s;
-}
-.ghead:hover{background:var(--panel-2)}
-.ghead .chev{color:var(--faint);font-size:10px;transition:transform .15s;flex:none}
-.group.open .chev{transform:rotate(90deg)}
-.ghead .gname{font-weight:600;flex:1;min-inline-size:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ghead .gcount{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-.ghead .gbar{inline-size:64px;block-size:4px;border-radius:99px;background:var(--bg);overflow:hidden;flex:none}
-.ghead .gbar i{display:block;block-size:100%;background:var(--accent);border-radius:99px}
-.gbody{padding:4px 10px 10px;display:flex;flex-direction:column;gap:5px;border-block-start:1px solid var(--border)}
-.gbody .task{background:var(--bg-soft)}
-/* hidden 属性を確実に有効化（display 指定より優先） */
-.gbody[hidden]{display:none!important}
-
-/* ---------- 表示形式: タイル ---------- */
-#list.tile{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
-.gbody.tile{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:7px}
-.tile .task{flex-direction:column;align-items:stretch;gap:6px;padding:14px 14px 12px;position:relative}
-.tile .task .check{position:absolute;inset-block-start:10px;inset-inline-end:10px}
-.tile .task .body{padding-inline-end:26px}
-.tile .task .title{font-size:13.5px;overflow-wrap:anywhere}
-.tile .task .line2{margin-block-start:2px}
-.tile .task .copyhint{display:none}
-.tile .notebox,.tile .emptymsg{grid-column:1/-1}
-
-/* ---------- 表示形式: コンパクト ---------- */
-#list.compact{gap:2px}
-.gbody.compact{gap:2px}
-.compact .task{padding:5px 12px 5px 8px;border-radius:8px;gap:9px}
-.compact .task .check{inline-size:18px;block-size:18px;font-size:10px;border-width:1px}
-.compact .task .body{display:flex;align-items:baseline;gap:10px;min-inline-size:0}
-.compact .task .line1{flex-wrap:nowrap;min-inline-size:0;overflow:hidden}
-.compact .task .title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.compact .task .line2{flex:1;min-inline-size:0;margin-block-start:0;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.compact .task .extra{display:none}
-.compact .task .copyhint{display:none}
-.compact .exnote{margin-block-start:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-.emptymsg{text-align:center;color:var(--faint);padding:48px 0;font-size:13.5px}
-#sentinel{block-size:2px}
-.hint{
-  max-inline-size:960px;margin:26px auto 0;font-size:11.5px;color:var(--faint);
-  display:flex;gap:18px;flex-wrap:wrap;
-}
-
-/* drop overlay */
-#dropOverlay{
-  position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;
-  background:rgba(21,21,21,.88);backdrop-filter:blur(3px);
-  border:3px dashed var(--white-soft);border-radius:14px;margin:10px;
-  font-size:20px;font-weight:600;color:var(--text);pointer-events:none;
-}
-#dropOverlay.on{display:flex}
-
-/* toast */
-#toast{
-  position:fixed;inset-block-end:26px;inset-inline-start:50%;transform:translate(-50%,16px);
-  background:#2a2a2a;border:1px solid var(--border-strong);border-radius:10px;
-  box-shadow:var(--shadow);padding:11px 20px;font-size:13px;max-inline-size:min(90vw,560px);
-  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:200;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-#toast.show{opacity:1;transform:translate(-50%,0)}
-#toast.err{border-color:var(--danger);color:var(--danger)}
-
-@media (max-width:640px){
-  header{padding-inline:14px}
-  main{padding-inline:14px}
-  #fileBar .fname{max-inline-size:120px}
-  .copyhint{display:none}
-}
-
-/* ============================================================
-   POP MODE — カラフルで弾むようなワークスペース
-   ============================================================ */
-:root{
-  --bg:#100c24;
-  --bg-soft:#19143a;
-  --panel:#211947;
-  --panel-2:#2c225b;
-  --border:rgba(255,255,255,.10);
-  --border-strong:rgba(255,255,255,.22);
-  --text:#fffaff;
-  --muted:#c9c1e7;
-  --faint:#948ab8;
-  --white-soft:#fff;
-  --accent:#65e6ce;
-  --accent-strong:#8ff4df;
-  --accent-soft:rgba(101,230,206,.15);
-  --accent-line:rgba(101,230,206,.48);
-  --pink:#ff6fbd;
-  --purple:#9b7bff;
-  --cyan:#61dcff;
-  --yellow:#ffd166;
-  --warn:#ffd166;
-  --warn-soft:rgba(255,209,102,.12);
-  --danger:#ff7d8f;
-  --radius:18px;
-  --shadow:0 16px 42px rgba(5,2,25,.32);
-}
-body{
-  background:
-    radial-gradient(circle at 8% 3%,rgba(255,111,189,.18),transparent 27rem),
-    radial-gradient(circle at 95% 18%,rgba(97,220,255,.16),transparent 25rem),
-    radial-gradient(circle at 50% 110%,rgba(155,123,255,.17),transparent 32rem),
-    var(--bg);
-  background-attachment:fixed;
-}
-button,.task,.group,#search,select{transition-duration:.18s!important}
-:focus-visible{outline:3px solid var(--yellow);outline-offset:3px;border-radius:10px}
-
-header{
-  background:linear-gradient(135deg,rgba(21,15,48,.94),rgba(31,19,62,.9));
-  backdrop-filter:blur(18px) saturate(145%);
-  border-block-end:1px solid rgba(255,255,255,.1);
-  box-shadow:0 10px 34px rgba(5,2,25,.16);
-  padding-block:16px 14px;
-}
-.hrow,#progressRow,#randRow,main,.hint{max-inline-size:1080px}
-.brand{font-size:19px;font-weight:800;letter-spacing:.015em}
-.brand::first-letter{filter:drop-shadow(0 4px 7px rgba(255,111,189,.45))}
-.brand .sub{
-  color:#bfb3e5;font-size:10.5px;font-weight:700;letter-spacing:.12em;
-  text-transform:uppercase;background:rgba(155,123,255,.14);border:1px solid rgba(155,123,255,.2);
-  padding:3px 8px;border-radius:99px;
-}
-#fileBar{background:rgba(255,255,255,.055);border:1px solid var(--border);padding:5px 7px 5px 12px;border-radius:99px}
-#fileBar .fname{font-weight:700}
-.linkbtn{border-radius:99px;padding:5px 10px}
-.linkbtn:hover{background:rgba(255,255,255,.1)}
-.pbar{block-size:9px;background:#17112f;border:1px solid rgba(255,255,255,.08);padding:2px}
-.pbar i{background:linear-gradient(90deg,var(--pink),var(--purple) 48%,var(--cyan));box-shadow:0 0 14px rgba(97,220,255,.52)}
-#pcount{font-weight:700;color:#ded7f4;background:rgba(255,255,255,.055);padding:3px 9px;border-radius:99px}
-
-#randRow{margin-block-start:14px;gap:10px}
-#randBtn{
-  border:1px solid transparent;border-radius:20px;padding:13px 17px;
-  background:linear-gradient(#241a4b,#241a4b) padding-box,
-             linear-gradient(105deg,var(--pink),var(--purple),var(--cyan)) border-box;
-  box-shadow:0 10px 28px rgba(5,2,25,.2);
-}
-#randBtn:hover{background:linear-gradient(#2c205b,#2c205b) padding-box,linear-gradient(105deg,var(--pink),var(--yellow),var(--cyan)) border-box;transform:translateY(-1px)}
-#randBtn .shuffle{inline-size:34px;block-size:34px;display:grid;place-items:center;background:linear-gradient(135deg,var(--pink),var(--purple));border-radius:12px;box-shadow:0 7px 16px rgba(255,111,189,.2)}
-#randBtn .nt{font-size:14.5px}
-#randBtn .na{color:#bdb4dc}
-#randBtn .do{color:var(--cyan);font-weight:700}
-#rerollBtn{inline-size:52px;border-radius:17px;background:#211947;border-color:rgba(97,220,255,.22);font-size:20px}
-#rerollBtn:hover{background:#2c225b;color:var(--cyan);transform:rotate(-12deg)}
-kbd{border-radius:8px;background:#261d4f;border-color:rgba(255,255,255,.18);box-shadow:0 2px 0 #0b071b;color:#d7d0ee}
-
-main{padding-block-start:26px}
-#drop{
-  position:relative;overflow:hidden;border-color:rgba(155,123,255,.44);border-radius:28px;
-  background:linear-gradient(145deg,rgba(44,34,91,.78),rgba(26,20,58,.82));
-  box-shadow:var(--shadow);
-}
-#drop::before,#drop::after{content:"";position:absolute;border-radius:50%;filter:blur(1px);pointer-events:none}
-#drop::before{inline-size:130px;block-size:130px;background:rgba(255,111,189,.18);inset:-48px auto auto -30px}
-#drop::after{inline-size:160px;block-size:160px;background:rgba(97,220,255,.13);inset:auto -45px -78px auto}
-#drop.over{border-color:var(--yellow);background:linear-gradient(145deg,rgba(58,42,105,.9),rgba(28,23,64,.9));transform:scale(1.005)}
-#drop .ic{font-size:48px;filter:drop-shadow(0 8px 16px rgba(255,111,189,.36))}
-#drop h2{font-size:21px;font-weight:800}
-#pickBtn{border:0;border-radius:99px;background:linear-gradient(110deg,var(--pink),var(--purple));padding:11px 28px;color:#fff;box-shadow:0 9px 22px rgba(155,123,255,.27)}
-#pickBtn:hover{background:linear-gradient(110deg,#ff83c8,#ac91ff);transform:translateY(-2px)}
-.fmt{background:rgba(33,25,71,.72);border-color:rgba(155,123,255,.18);border-radius:18px}
-.fmt pre{background:#120d2b;border:1px solid rgba(255,255,255,.06);color:#a99fca}
-
-#tabs{gap:7px;border:0;margin-block-end:16px;background:rgba(33,25,71,.56);padding:5px;border-radius:16px;inline-size:max-content;max-inline-size:100%;overflow-x:auto}
-.tab{border:0!important;margin:0;padding:8px 14px;border-radius:11px;white-space:nowrap}
-.tab:hover{background:rgba(255,255,255,.06)}
-.tab.on{background:linear-gradient(120deg,rgba(255,111,189,.22),rgba(155,123,255,.24));color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
-.tab .n{background:rgba(7,4,26,.35);color:#bfb6dc}
-.tab.on .n{background:rgba(255,255,255,.14);color:#fff}
-#toolbar{padding:12px;background:rgba(33,25,71,.62);border:1px solid rgba(255,255,255,.075);border-radius:20px;box-shadow:0 12px 30px rgba(5,2,25,.16)}
-#search{background:#171130;border-color:rgba(155,123,255,.2);border-radius:13px;padding:10px 15px}
-#search:focus{background:#1c153b;border-color:var(--purple);box-shadow:0 0 0 3px rgba(155,123,255,.13)}
-.seg{background:#171130;border-color:rgba(255,255,255,.09);border-radius:13px;padding:3px;gap:2px}
-.seg button{border-radius:9px;padding:7px 12px}
-.seg button.on{background:linear-gradient(125deg,rgba(255,111,189,.24),rgba(155,123,255,.26));color:#fff;box-shadow:0 3px 10px rgba(5,2,25,.2)}
-.fmtsel select{background:#171130;border-color:rgba(255,255,255,.1);border-radius:11px;padding:7px 9px}
-
-#list{gap:9px}
-.task{
-  border-color:rgba(255,255,255,.085);border-radius:17px;
-  background:linear-gradient(115deg,rgba(36,27,76,.94),rgba(30,23,65,.94));
-  box-shadow:0 8px 22px rgba(5,2,25,.12);padding-block:12px;
-}
-.task:hover{border-color:rgba(97,220,255,.35);background:linear-gradient(115deg,#2a2058,#241b4e);transform:translateY(-1px);box-shadow:0 11px 26px rgba(5,2,25,.2)}
-.task .title{font-weight:750}
-.task .extra{background:rgba(155,123,255,.13);color:#c9bfff;border:1px solid rgba(155,123,255,.12)}
-.task .dup{color:var(--yellow);background:rgba(255,209,102,.1);border-color:rgba(255,209,102,.15)}
-.copyhint{color:var(--cyan);font-weight:700}
-.check{border:2px solid rgba(255,255,255,.24);background:rgba(255,255,255,.03)}
-.check:hover{border-color:var(--cyan);background:rgba(97,220,255,.09)}
-.task.done{opacity:.62;background:rgba(26,22,54,.72)}
-.task.done .check{background:linear-gradient(135deg,var(--accent),var(--cyan));border-color:transparent;color:#15112b;box-shadow:0 5px 14px rgba(101,230,206,.25)}
-
-.group{position:relative;border-color:rgba(255,255,255,.09);border-radius:20px;background:linear-gradient(120deg,rgba(37,27,77,.96),rgba(28,22,62,.96));box-shadow:0 9px 24px rgba(5,2,25,.13)}
-.group:hover{border-color:rgba(155,123,255,.24)}
-.ghead{padding:14px 148px 14px 16px}
-.ghead:hover{background:rgba(255,255,255,.035)}
-.ghead .chev{inline-size:24px;block-size:24px;display:grid;place-items:center;background:rgba(155,123,255,.14);border-radius:8px;color:#c4b9ef}
-.ghead .gname{font-size:14.5px;font-weight:800}
-.ghead .gcount{color:#b8afd5}
-.ghead .gbar{inline-size:74px;block-size:6px;background:#120d2b}
-.ghead .gbar i{background:linear-gradient(90deg,var(--pink),var(--accent));box-shadow:0 0 9px rgba(101,230,206,.3)}
-.gbulk{
-  position:absolute;inset-block-start:11px;inset-inline-end:12px;z-index:2;
-  min-inline-size:118px;padding:7px 11px;border-radius:11px;
-  color:#17112f;background:linear-gradient(110deg,var(--yellow),#ff9fbf);
-  font-size:11.5px;font-weight:800;box-shadow:0 6px 15px rgba(255,111,189,.18);
-}
-.gbulk:hover{filter:brightness(1.08);transform:translateY(-1px)}
-.gbulk.all-done{color:#e7e1f8;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
-.gbody{background:rgba(12,8,33,.2);border-color:rgba(255,255,255,.07);padding:8px 10px 11px}
-.gbody .task{background:rgba(25,19,55,.82);box-shadow:none}
-.notebox{border-color:rgba(255,209,102,.24)}
-.emptymsg{padding:64px 16px;color:#aaa0cd}
-#toast{background:#2a2058;border-color:rgba(255,255,255,.16);border-radius:14px;box-shadow:0 18px 48px rgba(5,2,25,.44)}
-#dropOverlay{background:rgba(16,12,36,.9);border-color:var(--yellow);color:#fff}
-
-@media (max-width:720px){
-  .hrow{gap:8px}.brand{inline-size:100%;font-size:17px}.brand .sub{display:none}
-  #fileBar{margin-inline-start:0;inline-size:100%;overflow-x:auto;border-radius:14px}
-  #randRow kbd{display:none}#randBtn .do{display:none}
-  #toolbar{padding:9px}.fmtsel{inline-size:100%;justify-content:flex-end}
-  #tabs{inline-size:100%}.tab{flex:1;text-align:center}
-  .ghead{padding-inline-end:48px;flex-wrap:wrap;gap:8px}
-  .ghead .gname{flex-basis:calc(100% - 40px)}
-  .ghead .gcount{margin-inline-start:36px}
-  .ghead .gbar{flex:1}
-  .gbulk{inset-block-start:12px;min-inline-size:34px;inline-size:34px;block-size:30px;padding:0;font-size:0}
-  .gbulk::after{content:"✓";font-size:15px}.gbulk.all-done::after{content:"↶"}
-}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>曲コピータスク — Spotify 検索用リスト管理</title>
+  <link rel="stylesheet" href="styles/themes.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/header.css">
+  <link rel="stylesheet" href="styles/content.css">
 </head>
 <body>
+  <div id="dropOverlay" aria-hidden="true">📄 ここにドロップして読み込み</div>
 
-<div id="dropOverlay" aria-hidden="true">📄 ここにドロップして読み込み</div>
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="topline">
+        <a class="brand" href="#" aria-label="曲コピータスクの先頭へ">
+          <span class="brand-mark" aria-hidden="true">♪</span>
+          <span class="brand-copy">
+            <strong>曲コピータスク</strong>
+            <small>Spotify 検索用リスト管理</small>
+          </span>
+        </a>
 
-<header>
-  <div class="hrow">
-    <div class="brand">🎵 曲コピータスク <span class="sub">Spotify 検索用リスト管理</span></div>
-    <div id="fileBar" hidden>
-      <span class="fname" id="fname"></span>
-      <span id="fstat"></span>
-      <button class="linkbtn" id="reloadBtn" type="button">別のファイルを開く</button>
-      <button class="linkbtn danger" id="resetBtn" type="button">進捗をリセット</button>
+        <div class="header-actions">
+          <label class="theme-control" for="themeSelect">
+            <span class="theme-dot" aria-hidden="true"></span>
+            <span class="control-label">テーマ</span>
+            <select id="themeSelect" aria-label="表示テーマを変更"></select>
+          </label>
+          <button class="header-button" id="reloadBtn" type="button">
+            <span aria-hidden="true">↗</span> ファイルを開く
+          </button>
+        </div>
+      </div>
+
+      <section id="workspaceHeader" class="workspace-header" hidden aria-label="現在のリストと進捗">
+        <div id="fileBar" class="file-card">
+          <span class="file-icon" aria-hidden="true">♫</span>
+          <span class="file-copy">
+            <strong class="fname" id="fname"></strong>
+            <small id="fstat"></small>
+          </span>
+          <div id="progressRow" class="progress-summary">
+            <div class="pbar" aria-hidden="true"><i id="pfill"></i></div>
+            <span id="pcount"></span>
+          </div>
+          <button class="quiet-button danger" id="resetBtn" type="button">進捗をリセット</button>
+        </div>
+
+        <div id="randRow" class="next-card">
+          <button id="randBtn" type="button" title="この曲をコピーして完了にする">
+            <span class="shuffle" aria-hidden="true">↝</span>
+            <span class="nlabel">
+              <small>NEXT TRACK</small>
+              <strong class="nt" id="randTitle"></strong>
+              <span class="na" id="randArtist"></span>
+            </span>
+            <span class="do">コピーして完了 <kbd>R</kbd></span>
+          </button>
+          <button id="rerollBtn" type="button" title="別の曲を引き直す" aria-label="別の曲を引き直す">↻</button>
+        </div>
+      </section>
     </div>
-  </div>
-  <div id="progressRow">
-    <div class="pbar"><i id="pfill"></i></div>
-    <span id="pcount"></span>
-  </div>
-  <div id="randRow">
-    <button id="randBtn" type="button" title="この曲をコピーして完了にする">
-      <span class="shuffle">🔀</span>
-      <span class="nlabel"><span class="nt" id="randTitle"></span><span class="na" id="randArtist"></span></span>
-      <span class="do">クリックでコピーして完了</span>
-    </button>
-    <button id="rerollBtn" type="button" title="別の曲を引き直す" aria-label="別の曲を引き直す">⟲</button>
-    <kbd title="キーボードショートカット">R</kbd>
-  </div>
-</header>
+  </header>
 
-<main>
-  <noscript><p>このアプリの利用には JavaScript を有効にしてください。</p></noscript>
+  <main>
+    <noscript><p>このアプリの利用には JavaScript を有効にしてください。</p></noscript>
 
-  <section id="empty">
-    <div id="drop">
-      <span class="ic">🎧</span>
-      <h2>曲リストの .txt ファイルをここにドロップ</h2>
-      <p>読み込んだ曲は 1 曲ずつタスクとして表示され、クリックでコピーできます</p>
-      <button id="pickBtn" type="button">ファイルを選択</button>
-      <input id="fileInput" type="file" accept=".txt,text/plain" hidden>
-    </div>
-    <div class="fmt">
-      <b>対応フォーマット</b>（1 行 = 1 曲、「アーティスト - 曲名」区切り）
-      <pre>The Beatles - In My Life - Remastered 2009
+    <section id="empty">
+      <div id="drop">
+        <span class="ic" aria-hidden="true">♫</span>
+        <p class="eyebrow">SONG LIST</p>
+        <h1>曲リストを読み込む</h1>
+        <p>1行ずつタスクにして、Spotify検索用の文字列をすばやくコピーできます。</p>
+        <button id="pickBtn" type="button">.txt ファイルを選択</button>
+        <input id="fileInput" type="file" accept=".txt,text/plain" hidden>
+      </div>
+      <div class="fmt">
+        <b>対応フォーマット</b>（1行 = 1曲、「アーティスト - 曲名」区切り）
+        <pre>The Beatles - In My Life - Remastered 2009
 The Buggles - Video Killed The Radio Star
 The Chainsmokers - Closer</pre>
-      「 - 」が複数ある行は、<b>最初の「 - 」</b>をアーティスト名と曲名の区切りとして扱います。<br>
-      区切りのない行（曲名やアーティスト名のみ）は「例外」タブに分類されます。<br>
-      進捗はこのブラウザーに自動保存され、同じファイルを読み込み直すと復元されます。
-    </div>
-  </section>
-
-  <section id="listSection" hidden>
-    <nav id="tabs" aria-label="表示切替">
-      <button class="tab on" data-view="artist" type="button">アーティスト別 <span class="n" id="nArtist">0</span></button>
-      <button class="tab" data-view="song" type="button">曲別 <span class="n" id="nSong">0</span></button>
-      <button class="tab" data-view="ex" type="button">例外 <span class="n" id="nEx">0</span></button>
-    </nav>
-    <div id="toolbar">
-      <input id="search" type="search" placeholder="アーティスト名・曲名で検索…" autocomplete="off">
-      <div class="seg" id="statusSeg" role="group" aria-label="状態で絞り込み">
-        <button data-f="all" class="on" type="button">すべて</button>
-        <button data-f="todo" type="button">未完了</button>
-        <button data-f="done" type="button">完了</button>
+        「 - 」が複数ある行は、最初の区切りをアーティスト名と曲名の境界として扱います。
+        区切りのない行は「例外」タブに分類されます。進捗はブラウザーに自動保存されます。
       </div>
-      <div class="seg" id="layoutSeg" role="group" aria-label="表示形式">
-        <button data-l="list" class="on" type="button" title="リスト表示">☰ リスト</button>
-        <button data-l="tile" type="button" title="タイル表示">▦ タイル</button>
-        <button data-l="compact" type="button" title="コンパクト表示（高密度）">≡ コンパクト</button>
+    </section>
+
+    <section id="listSection" hidden>
+      <nav id="tabs" aria-label="表示切替">
+        <button class="tab on" data-view="artist" type="button">アーティスト別 <span class="n" id="nArtist">0</span></button>
+        <button class="tab" data-view="song" type="button">曲別 <span class="n" id="nSong">0</span></button>
+        <button class="tab" data-view="ex" type="button">例外 <span class="n" id="nEx">0</span></button>
+      </nav>
+
+      <div id="toolbar">
+        <label class="search-box" for="search">
+          <span aria-hidden="true">⌕</span>
+          <input id="search" type="search" placeholder="アーティスト名・曲名で検索…" autocomplete="off">
+        </label>
+        <div class="seg" id="statusSeg" role="group" aria-label="状態で絞り込み">
+          <button data-f="all" class="on" type="button">すべて</button>
+          <button data-f="todo" type="button">未完了</button>
+          <button data-f="done" type="button">完了</button>
+        </div>
+        <div class="seg icon-seg" id="layoutSeg" role="group" aria-label="表示形式">
+          <button data-l="list" class="on" type="button" title="リスト表示">☰<span>リスト</span></button>
+          <button data-l="tile" type="button" title="タイル表示">▦<span>タイル</span></button>
+          <button data-l="compact" type="button" title="コンパクト表示">≡<span>コンパクト</span></button>
+        </div>
+        <label class="fmtsel">コピー形式
+          <select id="fmtSel">
+            <option value="space">アーティスト 曲名</option>
+            <option value="dash">アーティスト - 曲名</option>
+            <option value="reverse">曲名 アーティスト</option>
+          </select>
+        </label>
       </div>
-      <label class="fmtsel">コピー形式
-        <select id="fmtSel">
-          <option value="space">アーティスト 曲名</option>
-          <option value="dash">アーティスト - 曲名</option>
-          <option value="reverse">曲名 アーティスト</option>
-        </select>
-      </label>
-    </div>
-    <div id="list"></div>
-    <div id="sentinel" hidden></div>
-    <div class="hint">
-      <span>💡 行をクリック＝コピーして完了</span>
-      <span>Shift＋クリック＝コピーのみ（完了にしない）</span>
-      <span>○＝完了の切り替えのみ（コピーしない）</span>
-      <span><kbd>R</kbd>＝表示中のランダム曲をコピー</span>
-      <span>⟲＝別の曲を引き直し</span>
-    </div>
-  </section>
-</main>
 
-<div id="toast" role="status" aria-live="polite"></div>
+      <div id="list"></div>
+      <div id="sentinel" hidden></div>
+      <div class="hint">
+        <span>行をクリック＝コピーして完了</span>
+        <span>Shift＋クリック＝コピーのみ</span>
+        <span>○＝完了だけ切り替え</span>
+        <span><kbd>R</kbd>＝NEXT TRACKをコピー</span>
+      </div>
+    </section>
+  </main>
 
-<script>
-(function(){
-'use strict';
-
-/* ---------- state ---------- */
-var tasks=[], fileName='', fileKey='', doneCount=0;
-var view='artist', statusFilter='all', query='', fmt='space';
-var layout='list';
-try{
-  var lp=localStorage.getItem('songtasks:layout');
-  if(lp==='tile'||lp==='compact'||lp==='list')layout=lp;
-}catch(e){}
-var artistGroups=[], giByName=new Map();
-var chunkItems=[], chunkPos=0;
-var collator=new Intl.Collator('ja',{sensitivity:'base',numeric:true});
-
-var $=function(id){return document.getElementById(id);};
-var listEl=$('list'), sentinel=$('sentinel');
-
-/* ---------- utils ---------- */
-function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-function fnv(str){var h=0x811c9dc5;for(var i=0;i<str.length;i++){h^=str.charCodeAt(i);h=(h*0x01000193)>>>0;}return h.toString(16);}
-function debounce(fn,ms){var t;return function(){var a=arguments,c=this;clearTimeout(t);t=setTimeout(function(){fn.apply(c,a);},ms);};}
-function truncate(s,n){return s.length>n?s.slice(0,n-1)+'…':s;}
-function num(n){return n.toLocaleString('ja-JP');}
-
-var toastTimer;
-function toast(msg,isErr){
-  var el=$('toast');el.textContent=msg;
-  el.classList.toggle('err',!!isErr);el.classList.add('show');
-  clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('show');},2400);
-}
-
-/* ---------- parsing ----------
-   ルール: 最初の「 - 」をアーティスト名と曲名の区切りとする。
-   末尾の「Remastered 2009」「Live」等のバージョン表記は表示用バッジに分離し、
-   コピー内容には含めない（Spotify 検索のノイズを減らすため）。 */
-var SUFFIX_RE=/(remaster|remix|live|version|edit|acoustic|demo|mix|mono|stereo|feat|ft\.|single|deluxe|bonus|instrumental|radio|session|unplugged|(19|20)\d{2})/i;
-
-function classify(raw){
-  var parts=raw.split(' - ');
-  if(parts.length===1)return{kind:'ex1',artist:'',title:raw,extra:''};
-  var artist=parts[0].trim();
-  var rest=parts.slice(1);
-  var cut=rest.length;
-  while(cut>1&&SUFFIX_RE.test(rest[cut-1]))cut--;
-  return{
-    kind:'normal',
-    artist:artist,
-    title:rest.slice(0,cut).join(' - ').trim(),
-    extra:rest.slice(cut).join(' - ').trim()
-  };
-}
-
-function parseText(text){
-  if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
-  var lines=text.split(/\r\n|\r|\n/);
-  var map=new Map(),out=[];
-  for(var i=0;i<lines.length;i++){
-    var raw=lines[i].trim();
-    if(!raw)continue;
-    if(map.has(raw)){out[map.get(raw)].count++;continue;}
-    var t=classify(raw);
-    t.id=out.length;t.raw=raw;t.done=false;t.count=1;
-    map.set(raw,t.id);out.push(t);
-  }
-  return out;
-}
-
-function isSong(t){return t.kind==='normal';}
-
-function rebuildGroups(){
-  var m=new Map();
-  for(var i=0;i<tasks.length;i++){
-    var t=tasks[i];
-    if(!isSong(t))continue;
-    var k=t.artist||'（アーティスト不明）';
-    if(!m.has(k))m.set(k,[]);
-    m.get(k).push(t.id);
-  }
-  artistGroups=[];
-  m.forEach(function(ids,name){artistGroups.push({name:name,ids:ids});});
-  artistGroups.sort(function(a,b){return collator.compare(a.name,b.name);});
-}
-
-/* ---------- persistence ---------- */
-function storageKey(){return 'songtasks:'+fileKey;}
-var save=debounce(function(){
-  try{
-    var done=[];
-    for(var i=0;i<tasks.length;i++)if(tasks[i].done)done.push(i);
-    localStorage.setItem(storageKey(),JSON.stringify({v:2,name:fileName,fmt:fmt,done:done}));
-  }catch(e){}
-},400);
-
-function restore(){
-  var raw;
-  try{raw=localStorage.getItem(storageKey());}catch(e){return false;}
-  if(!raw)return false;
-  var d;
-  try{d=JSON.parse(raw);}catch(e){return false;}
-  if(!d||(d.v!==1&&d.v!==2))return false;
-  doneCount=0;
-  if(Array.isArray(d.done))for(var i=0;i<d.done.length;i++){var t=tasks[d.done[i]];if(t&&!t.done){t.done=true;doneCount++;}}
-  if(d.fmt){fmt=d.fmt;$('fmtSel').value=fmt;}
-  return doneCount>0;
-}
-
-/* ---------- clipboard ---------- */
-function payload(t){
-  if(isSong(t)){
-    if(fmt==='dash')return t.artist+' - '+t.title;
-    if(fmt==='reverse')return t.title+' '+t.artist;
-    return t.artist+' '+t.title;
-  }
-  return t.raw;
-}
-function copyText(s){
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    return navigator.clipboard.writeText(s).then(function(){return true;}).catch(function(){return legacyCopy(s);});
-  }
-  return Promise.resolve(legacyCopy(s));
-}
-function legacyCopy(s){
-  var ta=document.createElement('textarea');
-  ta.value=s;ta.style.position='fixed';ta.style.opacity='0';
-  document.body.appendChild(ta);ta.select();
-  var ok=false;
-  try{ok=document.execCommand('copy');}catch(e){}
-  ta.remove();return ok;
-}
-function copyTask(t,markDone){
-  copyText(payload(t)).then(function(ok){
-    if(ok){
-      if(markDone&&!t.done)setDone(t,true);
-      toast('📋 コピーしました — '+truncate(payload(t),42));
-    }else{
-      toast('コピーに失敗しました。もう一度お試しください',true);
-    }
-  });
-}
-
-/* ---------- done state ---------- */
-function setDone(t,val){
-  if(t.done===val)return;
-  t.done=val;doneCount+=val?1:-1;
-  var rows=listEl.querySelectorAll('.task[data-id="'+t.id+'"]');
-  for(var i=0;i<rows.length;i++){
-    rows[i].classList.toggle('done',val);
-    if(view==='artist'){
-      var g=rows[i].closest('.group');
-      if(g)updateGroupHead(g);
-    }
-  }
-  if(view==='artist'&&rows.length===0&&isSong(t)){
-    var gi=giByName.get(t.artist||'（アーティスト不明）');
-    if(gi!==undefined){
-      var gel=listEl.querySelector('.group[data-gi="'+gi+'"]');
-      if(gel)updateGroupHead(gel);
-    }
-  }
-  updateProgress();updateRand();save();
-}
-
-function updateGroupHead(gel){
-  var gi=+gel.getAttribute('data-gi');
-  var g=chunkItems[gi];
-  if(!g||!g.all)return;
-  var dn=0;
-  for(var i=0;i<g.all.length;i++)if(tasks[g.all[i]].done)dn++;
-  var c=gel.querySelector('.gcount');
-  if(c)c.textContent=g.all.length+'曲 · 完了 '+dn;
-  var bar=gel.querySelector('.gbar i');
-  if(bar)bar.style.inlineSize=(g.all.length?Math.round(dn/g.all.length*100):0)+'%';
-  var bulk=gel.querySelector('.gbulk');
-  if(bulk){
-    var allDone=dn===g.all.length;
-    bulk.textContent=allDone?'完了を戻す':'まとめて完了';
-    bulk.classList.toggle('all-done',allDone);
-    bulk.setAttribute('aria-label',g.name+'の曲を'+(allDone?'すべて未完了に戻す':'まとめて完了にする'));
-    bulk.title=allDone?'このアーティストの曲をすべて未完了に戻す':'このアーティストの曲をすべて完了にする';
-  }
-}
-
-function setArtistDone(g,val){
-  var changed=0;
-  for(var i=0;i<g.all.length;i++){
-    var t=tasks[g.all[i]];
-    if(t.done!==val){t.done=val;doneCount+=val?1:-1;changed++;}
-  }
-  if(!changed)return;
-  render();updateProgress();updateRand();save();
-  toast(val?'🎉 '+g.name+' の '+changed+'曲をまとめて完了しました':'↶ '+g.name+' の完了を戻しました');
-}
-
-function updateProgress(){
-  var total=tasks.length;
-  var pct=total?Math.round(doneCount/total*100):0;
-  $('pfill').style.inlineSize=pct+'%';
-  $('pcount').textContent=num(doneCount)+' / '+num(total)+'（残り '+num(total-doneCount)+'）';
-}
-
-/* ---------- ランダマイザ ----------
-   未完了の曲からランダムに 1 曲を選んで表示。
-   コピーすると完了になり、自動で次の 1 曲を抽選する。 */
-var randPick=null;
-function drawRandom(exclude){
-  var pool=[];
-  for(var i=0;i<tasks.length;i++){
-    var t=tasks[i];
-    if(isSong(t)&&!t.done&&t!==exclude)pool.push(t);
-  }
-  if(!pool.length){randPick=(exclude&&!exclude.done)?exclude:null;return;}
-  randPick=pool[Math.floor(Math.random()*pool.length)];
-}
-function updateRand(){
-  if(!randPick||randPick.done)drawRandom(null);
-  var btn=$('randBtn');
-  if(!randPick){
-    btn.classList.add('alldone');
-    $('randTitle').textContent='🎉 すべての曲をコピーしました！';
-    $('randArtist').textContent='おつかれさまでした';
-  }else{
-    btn.classList.remove('alldone');
-    $('randTitle').textContent=randPick.title;
-    $('randArtist').textContent=randPick.artist;
-  }
-}
-
-/* ---------- rendering ---------- */
-function matchQ(t,q){
-  if(!q)return true;
-  return (t.artist+' '+t.title+' '+t.raw).toLowerCase().indexOf(q)!==-1;
-}
-function matchStatus(t){
-  if(statusFilter==='all')return true;
-  return statusFilter==='todo'?!t.done:t.done;
-}
-
-function buildItems(){
-  var q=query.toLowerCase();
-  var i,t,out=[];
-  if(view==='song'){
-    for(i=0;i<tasks.length;i++){t=tasks[i];if(isSong(t)&&matchQ(t,q)&&matchStatus(t))out.push(t);}
-    return out;
-  }
-  if(view==='ex'){
-    for(i=0;i<tasks.length;i++){t=tasks[i];if(!isSong(t)&&matchQ(t,q)&&matchStatus(t))out.push(t);}
-    return out;
-  }
-  giByName=new Map();
-  for(i=0;i<artistGroups.length;i++){
-    var g=artistGroups[i],ids=[];
-    for(var j=0;j<g.ids.length;j++){t=tasks[g.ids[j]];if(matchQ(t,q)&&matchStatus(t))ids.push(t.id);}
-    if(ids.length){giByName.set(g.name,out.length);out.push({name:g.name,ids:ids,all:g.ids});}
-  }
-  return out;
-}
-
-function rowHTML(t,showArtist){
-  var h='<div class="task'+(t.done?' done':'')+'" data-id="'+t.id+'" tabindex="0" role="button" aria-label="クリックでコピー">';
-  h+='<button class="check" type="button" aria-label="完了状態を切り替え" tabindex="-1"></button>';
-  h+='<div class="body"><div class="line1"><span class="title">'+esc(t.title)+'</span>';
-  if(t.extra)h+='<span class="extra">'+esc(t.extra)+'</span>';
-  if(t.count>1)h+='<span class="dup">×'+t.count+'</span>';
-  h+='</div>';
-  if(showArtist)h+='<div class="line2">'+esc(t.artist)+'</div>';
-  h+='</div><span class="copyhint">クリックでコピー</span></div>';
-  return h;
-}
-
-function exRowHTML(t){
-  var h='<div class="task ex'+(t.done?' done':'')+'" data-id="'+t.id+'" tabindex="0" role="button" aria-label="クリックで行全体をコピー">';
-  h+='<button class="check" type="button" aria-label="完了状態を切り替え" tabindex="-1"></button>';
-  h+='<div class="body"><div class="line1"><span class="title">'+esc(t.raw)+'</span>';
-  if(t.count>1)h+='<span class="dup">×'+t.count+'</span>';
-  h+='</div>';
-  h+='<div class="exnote">区切り「 - 」が見つかりません（曲名またはアーティスト名のみの行）。クリックで行全体をコピーします。</div>';
-  h+='</div><span class="copyhint">クリックでコピー</span></div>';
-  return h;
-}
-
-function groupHTML(g,gi){
-  var dn=0;
-  for(var i=0;i<g.all.length;i++)if(tasks[g.all[i]].done)dn++;
-  var pct=g.all.length?Math.round(dn/g.all.length*100):0;
-  var expanded=!!(query||statusFilter!=='all');
-  var h='<div class="group'+(expanded?' open':'')+'" data-gi="'+gi+'">';
-  h+='<button class="ghead" type="button" aria-expanded="'+expanded+'"><span class="chev">▶</span>';
-  h+='<span class="gname">'+esc(g.name)+'</span>';
-  h+='<span class="gcount">'+g.all.length+'曲 · 完了 '+dn+'</span>';
-  h+='<span class="gbar"><i style="inline-size:'+pct+'%"></i></span></button>';
-  var allDone=dn===g.all.length;
-  h+='<button class="gbulk'+(allDone?' all-done':'')+'" type="button" aria-label="'+esc(g.name)+'の曲を'+(allDone?'すべて未完了に戻す':'まとめて完了にする')+'" title="このアーティストの曲を'+(allDone?'すべて未完了に戻す':'すべて完了にする')+'">'+(allDone?'完了を戻す':'まとめて完了')+'</button>';
-  h+='<div class="gbody'+(layout!=='list'?' '+layout:'')+'"'+(expanded?'':' hidden')+' data-loaded="'+(expanded?'1':'0')+'">';
-  if(expanded){for(var j=0;j<g.ids.length;j++)h+=rowHTML(tasks[g.ids[j]],false);}
-  h+='</div></div>';
-  return h;
-}
-
-function render(){
-  listEl.textContent='';
-  listEl.classList.toggle('tile',view!=='artist'&&layout==='tile');
-  listEl.classList.toggle('compact',view!=='artist'&&layout==='compact');
-  chunkItems=buildItems();chunkPos=0;
-  if(view==='ex'&&chunkItems.length){
-    listEl.insertAdjacentHTML('beforeend',
-      '<div class="notebox">⚠️ 区切り「 - 」が見つからなかった行です。クリックすると行全体をそのままコピーできます。</div>');
-  }
-  if(!chunkItems.length){
-    var msg=view==='ex'?'例外はありません 🎉':(query||statusFilter!=='all')?'条件に一致するタスクがありません':'タスクがありません';
-    listEl.insertAdjacentHTML('beforeend','<div class="emptymsg">'+msg+'</div>');
-    sentinel.hidden=true;
-    return;
-  }
-  renderMore();
-}
-
-function renderMore(){
-  var n=view==='artist'?150:(layout==='compact'?500:300);
-  var end=Math.min(chunkItems.length,chunkPos+n);
-  var h='';
-  for(var i=chunkPos;i<end;i++){
-    if(view==='artist')h+=groupHTML(chunkItems[i],i);
-    else if(view==='ex')h+=exRowHTML(chunkItems[i]);
-    else h+=rowHTML(chunkItems[i],true);
-  }
-  listEl.insertAdjacentHTML('beforeend',h);
-  chunkPos=end;
-  sentinel.hidden=chunkPos>=chunkItems.length;
-}
-
-var io=new IntersectionObserver(function(es){
-  for(var i=0;i<es.length;i++)if(es[i].isIntersecting)renderMore();
-},{rootMargin:'600px'});
-io.observe(sentinel);
-
-function updateTabs(){
-  var nA=artistGroups.length,nS=0,nE=0;
-  for(var i=0;i<tasks.length;i++){if(isSong(tasks[i]))nS++;else nE++;}
-  $('nArtist').textContent=num(nA);
-  $('nSong').textContent=num(nS);
-  var ex=$('nEx');ex.textContent=num(nE);ex.classList.toggle('warn',nE>0);
-}
-
-/* ---------- events ---------- */
-listEl.addEventListener('click',function(e){
-  var bulk=e.target.closest('.gbulk');
-  if(bulk){
-    e.stopPropagation();
-    var bulkGroup=bulk.closest('.group');
-    var bulkData=chunkItems[+bulkGroup.getAttribute('data-gi')];
-    var allDone=true;
-    for(var bi=0;bi<bulkData.all.length;bi++)if(!tasks[bulkData.all[bi]].done){allDone=false;break;}
-    setArtistDone(bulkData,!allDone);
-    return;
-  }
-  var chk=e.target.closest('.check');
-  if(chk){
-    e.stopPropagation();
-    var row=chk.closest('.task');
-    var t=tasks[+row.getAttribute('data-id')];
-    setDone(t,!t.done);
-    return;
-  }
-  var gh=e.target.closest('.ghead');
-  if(gh){
-    var grp=gh.closest('.group');
-    var body=grp.querySelector('.gbody');
-    var open=body.hidden;
-    if(open&&body.getAttribute('data-loaded')!=='1'){
-      var g=chunkItems[+grp.getAttribute('data-gi')];
-      var h='';
-      for(var j=0;j<g.ids.length;j++)h+=rowHTML(tasks[g.ids[j]],false);
-      body.innerHTML=h;
-      body.setAttribute('data-loaded','1');
-    }
-    body.hidden=!open;
-    grp.classList.toggle('open',open);
-    gh.setAttribute('aria-expanded',open?'true':'false');
-    return;
-  }
-  var row2=e.target.closest('.task');
-  if(row2){
-    var t2=tasks[+row2.getAttribute('data-id')];
-    copyTask(t2,!e.shiftKey);
-  }
-});
-
-listEl.addEventListener('keydown',function(e){
-  if(e.key!=='Enter'&&e.key!==' ')return;
-  var row=e.target.closest('.task');
-  if(!row)return;
-  e.preventDefault();
-  copyTask(tasks[+row.getAttribute('data-id')],!e.shiftKey);
-});
-
-$('tabs').addEventListener('click',function(e){
-  var b=e.target.closest('.tab');
-  if(!b)return;
-  view=b.getAttribute('data-view');
-  var btns=document.querySelectorAll('#tabs .tab');
-  for(var i=0;i<btns.length;i++)btns[i].classList.toggle('on',btns[i]===b);
-  render();
-});
-
-$('statusSeg').addEventListener('click',function(e){
-  var b=e.target.closest('button');
-  if(!b)return;
-  statusFilter=b.getAttribute('data-f');
-  var btns=document.querySelectorAll('#statusSeg button');
-  for(var i=0;i<btns.length;i++)btns[i].classList.toggle('on',btns[i]===b);
-  render();
-});
-
-$('layoutSeg').addEventListener('click',function(e){
-  var b=e.target.closest('button');
-  if(!b)return;
-  layout=b.getAttribute('data-l');
-  try{localStorage.setItem('songtasks:layout',layout);}catch(err){}
-  var btns=document.querySelectorAll('#layoutSeg button');
-  for(var i=0;i<btns.length;i++)btns[i].classList.toggle('on',btns[i]===b);
-  render();
-});
-
-/* 保存済みの表示形式をボタンに反映 */
-(function(){
-  var btns=document.querySelectorAll('#layoutSeg button');
-  for(var i=0;i<btns.length;i++)btns[i].classList.toggle('on',btns[i].getAttribute('data-l')===layout);
-})();
-
-$('search').addEventListener('input',debounce(function(e){
-  query=e.target.value.trim();
-  render();
-},200));
-
-$('fmtSel').addEventListener('change',function(e){fmt=e.target.value;save();});
-
-$('randBtn').addEventListener('click',function(){
-  if(randPick&&!randPick.done)copyTask(randPick,true);
-});
-
-$('rerollBtn').addEventListener('click',function(){
-  if(!tasks.length)return;
-  drawRandom(randPick);
-  updateRand();
-});
-
-document.addEventListener('keydown',function(e){
-  var k=(e.key||'').toLowerCase();
-  if(k!=='r'&&k!=='n')return;
-  var tag=(e.target.tagName||'').toLowerCase();
-  if(tag==='input'||tag==='textarea'||tag==='select')return;
-  if(!tasks.length)return;
-  if(randPick&&!randPick.done)copyTask(randPick,true);
-});
-
-$('resetBtn').addEventListener('click',function(){
-  if(!tasks.length)return;
-  if(!confirm('完了状態をすべてリセットしますか？（読み込んだリストはそのまま残ります）'))return;
-  for(var i=0;i<tasks.length;i++)tasks[i].done=false;
-  doneCount=0;
-  drawRandom(null);
-  render();updateProgress();updateRand();save();
-  toast('進捗をリセットしました');
-});
-
-$('reloadBtn').addEventListener('click',function(){$('fileInput').click();});
-$('pickBtn').addEventListener('click',function(){$('fileInput').click();});
-$('fileInput').addEventListener('change',function(e){
-  if(e.target.files&&e.target.files[0])loadFile(e.target.files[0]);
-  e.target.value='';
-});
-
-/* drag & drop */
-var dragDepth=0;
-window.addEventListener('dragenter',function(e){
-  e.preventDefault();dragDepth++;
-  $('dropOverlay').classList.add('on');
-});
-window.addEventListener('dragover',function(e){e.preventDefault();});
-window.addEventListener('dragleave',function(e){
-  e.preventDefault();dragDepth--;
-  if(dragDepth<=0){dragDepth=0;$('dropOverlay').classList.remove('on');}
-});
-window.addEventListener('drop',function(e){
-  e.preventDefault();dragDepth=0;
-  $('dropOverlay').classList.remove('on');
-  var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
-  if(f)loadFile(f);
-});
-
-/* ---------- file loading ---------- */
-function decodeBuf(buf){
-  try{return new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(e){}
-  try{return new TextDecoder('shift_jis').decode(buf);}catch(e){}
-  return new TextDecoder('utf-8').decode(buf);
-}
-
-function loadBuffer(buf,name){
-  var text=decodeBuf(buf);
-  if(text.indexOf(String.fromCharCode(0))!==-1){toast('テキストファイルではないようです（.txt を選択してください）',true);return;}
-  var parsed=parseText(text);
-  if(!parsed.length){toast('曲の行が見つかりませんでした',true);return;}
-  tasks=parsed;fileName=name;
-  fileKey=fnv(text)+'-'+text.length;
-  doneCount=0;
-  var restored=restore();
-  rebuildGroups();
-  view='artist';statusFilter='all';query='';
-  $('search').value='';
-  var segBtns=document.querySelectorAll('#statusSeg button');
-  for(var i=0;i<segBtns.length;i++)segBtns[i].classList.toggle('on',segBtns[i].getAttribute('data-f')==='all');
-  var tabBtns=document.querySelectorAll('#tabs .tab');
-  for(var j=0;j<tabBtns.length;j++)tabBtns[j].classList.toggle('on',tabBtns[j].getAttribute('data-view')==='artist');
-  $('empty').hidden=true;
-  $('listSection').hidden=false;
-  $('fileBar').hidden=false;
-  $('fname').textContent=fileName;
-  $('fname').title=fileName;
-  $('fstat').textContent=num(tasks.length)+'曲';
-  $('progressRow').classList.add('on');
-  $('randRow').classList.add('on');
-  randPick=null;
-  updateTabs();render();updateProgress();updateRand();
-  toast(restored?'✅ 前回の進捗を復元しました（'+num(doneCount)+' / '+num(tasks.length)+'）':'📄 '+truncate(fileName,28)+' を読み込みました（'+num(tasks.length)+'曲）');
-}
-
-function loadFile(file){
-  file.arrayBuffer().then(function(buf){
-    loadBuffer(buf,file.name);
-  }).catch(function(){
-    toast('ファイルを読み込めませんでした',true);
-  });
-}
-
-/* 起動時は master.txt を既定の曲リストとして読み込む */
-fetch('master.txt').then(function(response){
-  if(!response.ok)throw new Error('HTTP '+response.status);
-  return response.arrayBuffer();
-}).then(function(buf){
-  loadBuffer(buf,'master.txt');
-}).catch(function(){
-  toast('master.txt を読み込めませんでした',true);
-});
-
-})();
-</script>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
