@@ -283,6 +283,169 @@ main{max-inline-size:960px;margin-inline:auto;padding:20px 20px 80px}
   #fileBar .fname{max-inline-size:120px}
   .copyhint{display:none}
 }
+
+/* ============================================================
+   POP MODE — カラフルで弾むようなワークスペース
+   ============================================================ */
+:root{
+  --bg:#100c24;
+  --bg-soft:#19143a;
+  --panel:#211947;
+  --panel-2:#2c225b;
+  --border:rgba(255,255,255,.10);
+  --border-strong:rgba(255,255,255,.22);
+  --text:#fffaff;
+  --muted:#c9c1e7;
+  --faint:#948ab8;
+  --white-soft:#fff;
+  --accent:#65e6ce;
+  --accent-strong:#8ff4df;
+  --accent-soft:rgba(101,230,206,.15);
+  --accent-line:rgba(101,230,206,.48);
+  --pink:#ff6fbd;
+  --purple:#9b7bff;
+  --cyan:#61dcff;
+  --yellow:#ffd166;
+  --warn:#ffd166;
+  --warn-soft:rgba(255,209,102,.12);
+  --danger:#ff7d8f;
+  --radius:18px;
+  --shadow:0 16px 42px rgba(5,2,25,.32);
+}
+body{
+  background:
+    radial-gradient(circle at 8% 3%,rgba(255,111,189,.18),transparent 27rem),
+    radial-gradient(circle at 95% 18%,rgba(97,220,255,.16),transparent 25rem),
+    radial-gradient(circle at 50% 110%,rgba(155,123,255,.17),transparent 32rem),
+    var(--bg);
+  background-attachment:fixed;
+}
+button,.task,.group,#search,select{transition-duration:.18s!important}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:3px;border-radius:10px}
+
+header{
+  background:linear-gradient(135deg,rgba(21,15,48,.94),rgba(31,19,62,.9));
+  backdrop-filter:blur(18px) saturate(145%);
+  border-block-end:1px solid rgba(255,255,255,.1);
+  box-shadow:0 10px 34px rgba(5,2,25,.16);
+  padding-block:16px 14px;
+}
+.hrow,#progressRow,#randRow,main,.hint{max-inline-size:1080px}
+.brand{font-size:19px;font-weight:800;letter-spacing:.015em}
+.brand::first-letter{filter:drop-shadow(0 4px 7px rgba(255,111,189,.45))}
+.brand .sub{
+  color:#bfb3e5;font-size:10.5px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;background:rgba(155,123,255,.14);border:1px solid rgba(155,123,255,.2);
+  padding:3px 8px;border-radius:99px;
+}
+#fileBar{background:rgba(255,255,255,.055);border:1px solid var(--border);padding:5px 7px 5px 12px;border-radius:99px}
+#fileBar .fname{font-weight:700}
+.linkbtn{border-radius:99px;padding:5px 10px}
+.linkbtn:hover{background:rgba(255,255,255,.1)}
+.pbar{block-size:9px;background:#17112f;border:1px solid rgba(255,255,255,.08);padding:2px}
+.pbar i{background:linear-gradient(90deg,var(--pink),var(--purple) 48%,var(--cyan));box-shadow:0 0 14px rgba(97,220,255,.52)}
+#pcount{font-weight:700;color:#ded7f4;background:rgba(255,255,255,.055);padding:3px 9px;border-radius:99px}
+
+#randRow{margin-block-start:14px;gap:10px}
+#randBtn{
+  border:1px solid transparent;border-radius:20px;padding:13px 17px;
+  background:linear-gradient(#241a4b,#241a4b) padding-box,
+             linear-gradient(105deg,var(--pink),var(--purple),var(--cyan)) border-box;
+  box-shadow:0 10px 28px rgba(5,2,25,.2);
+}
+#randBtn:hover{background:linear-gradient(#2c205b,#2c205b) padding-box,linear-gradient(105deg,var(--pink),var(--yellow),var(--cyan)) border-box;transform:translateY(-1px)}
+#randBtn .shuffle{inline-size:34px;block-size:34px;display:grid;place-items:center;background:linear-gradient(135deg,var(--pink),var(--purple));border-radius:12px;box-shadow:0 7px 16px rgba(255,111,189,.2)}
+#randBtn .nt{font-size:14.5px}
+#randBtn .na{color:#bdb4dc}
+#randBtn .do{color:var(--cyan);font-weight:700}
+#rerollBtn{inline-size:52px;border-radius:17px;background:#211947;border-color:rgba(97,220,255,.22);font-size:20px}
+#rerollBtn:hover{background:#2c225b;color:var(--cyan);transform:rotate(-12deg)}
+kbd{border-radius:8px;background:#261d4f;border-color:rgba(255,255,255,.18);box-shadow:0 2px 0 #0b071b;color:#d7d0ee}
+
+main{padding-block-start:26px}
+#drop{
+  position:relative;overflow:hidden;border-color:rgba(155,123,255,.44);border-radius:28px;
+  background:linear-gradient(145deg,rgba(44,34,91,.78),rgba(26,20,58,.82));
+  box-shadow:var(--shadow);
+}
+#drop::before,#drop::after{content:"";position:absolute;border-radius:50%;filter:blur(1px);pointer-events:none}
+#drop::before{inline-size:130px;block-size:130px;background:rgba(255,111,189,.18);inset:-48px auto auto -30px}
+#drop::after{inline-size:160px;block-size:160px;background:rgba(97,220,255,.13);inset:auto -45px -78px auto}
+#drop.over{border-color:var(--yellow);background:linear-gradient(145deg,rgba(58,42,105,.9),rgba(28,23,64,.9));transform:scale(1.005)}
+#drop .ic{font-size:48px;filter:drop-shadow(0 8px 16px rgba(255,111,189,.36))}
+#drop h2{font-size:21px;font-weight:800}
+#pickBtn{border:0;border-radius:99px;background:linear-gradient(110deg,var(--pink),var(--purple));padding:11px 28px;color:#fff;box-shadow:0 9px 22px rgba(155,123,255,.27)}
+#pickBtn:hover{background:linear-gradient(110deg,#ff83c8,#ac91ff);transform:translateY(-2px)}
+.fmt{background:rgba(33,25,71,.72);border-color:rgba(155,123,255,.18);border-radius:18px}
+.fmt pre{background:#120d2b;border:1px solid rgba(255,255,255,.06);color:#a99fca}
+
+#tabs{gap:7px;border:0;margin-block-end:16px;background:rgba(33,25,71,.56);padding:5px;border-radius:16px;inline-size:max-content;max-inline-size:100%;overflow-x:auto}
+.tab{border:0!important;margin:0;padding:8px 14px;border-radius:11px;white-space:nowrap}
+.tab:hover{background:rgba(255,255,255,.06)}
+.tab.on{background:linear-gradient(120deg,rgba(255,111,189,.22),rgba(155,123,255,.24));color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.tab .n{background:rgba(7,4,26,.35);color:#bfb6dc}
+.tab.on .n{background:rgba(255,255,255,.14);color:#fff}
+#toolbar{padding:12px;background:rgba(33,25,71,.62);border:1px solid rgba(255,255,255,.075);border-radius:20px;box-shadow:0 12px 30px rgba(5,2,25,.16)}
+#search{background:#171130;border-color:rgba(155,123,255,.2);border-radius:13px;padding:10px 15px}
+#search:focus{background:#1c153b;border-color:var(--purple);box-shadow:0 0 0 3px rgba(155,123,255,.13)}
+.seg{background:#171130;border-color:rgba(255,255,255,.09);border-radius:13px;padding:3px;gap:2px}
+.seg button{border-radius:9px;padding:7px 12px}
+.seg button.on{background:linear-gradient(125deg,rgba(255,111,189,.24),rgba(155,123,255,.26));color:#fff;box-shadow:0 3px 10px rgba(5,2,25,.2)}
+.fmtsel select{background:#171130;border-color:rgba(255,255,255,.1);border-radius:11px;padding:7px 9px}
+
+#list{gap:9px}
+.task{
+  border-color:rgba(255,255,255,.085);border-radius:17px;
+  background:linear-gradient(115deg,rgba(36,27,76,.94),rgba(30,23,65,.94));
+  box-shadow:0 8px 22px rgba(5,2,25,.12);padding-block:12px;
+}
+.task:hover{border-color:rgba(97,220,255,.35);background:linear-gradient(115deg,#2a2058,#241b4e);transform:translateY(-1px);box-shadow:0 11px 26px rgba(5,2,25,.2)}
+.task .title{font-weight:750}
+.task .extra{background:rgba(155,123,255,.13);color:#c9bfff;border:1px solid rgba(155,123,255,.12)}
+.task .dup{color:var(--yellow);background:rgba(255,209,102,.1);border-color:rgba(255,209,102,.15)}
+.copyhint{color:var(--cyan);font-weight:700}
+.check{border:2px solid rgba(255,255,255,.24);background:rgba(255,255,255,.03)}
+.check:hover{border-color:var(--cyan);background:rgba(97,220,255,.09)}
+.task.done{opacity:.62;background:rgba(26,22,54,.72)}
+.task.done .check{background:linear-gradient(135deg,var(--accent),var(--cyan));border-color:transparent;color:#15112b;box-shadow:0 5px 14px rgba(101,230,206,.25)}
+
+.group{position:relative;border-color:rgba(255,255,255,.09);border-radius:20px;background:linear-gradient(120deg,rgba(37,27,77,.96),rgba(28,22,62,.96));box-shadow:0 9px 24px rgba(5,2,25,.13)}
+.group:hover{border-color:rgba(155,123,255,.24)}
+.ghead{padding:14px 148px 14px 16px}
+.ghead:hover{background:rgba(255,255,255,.035)}
+.ghead .chev{inline-size:24px;block-size:24px;display:grid;place-items:center;background:rgba(155,123,255,.14);border-radius:8px;color:#c4b9ef}
+.ghead .gname{font-size:14.5px;font-weight:800}
+.ghead .gcount{color:#b8afd5}
+.ghead .gbar{inline-size:74px;block-size:6px;background:#120d2b}
+.ghead .gbar i{background:linear-gradient(90deg,var(--pink),var(--accent));box-shadow:0 0 9px rgba(101,230,206,.3)}
+.gbulk{
+  position:absolute;inset-block-start:11px;inset-inline-end:12px;z-index:2;
+  min-inline-size:118px;padding:7px 11px;border-radius:11px;
+  color:#17112f;background:linear-gradient(110deg,var(--yellow),#ff9fbf);
+  font-size:11.5px;font-weight:800;box-shadow:0 6px 15px rgba(255,111,189,.18);
+}
+.gbulk:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.gbulk.all-done{color:#e7e1f8;background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.gbody{background:rgba(12,8,33,.2);border-color:rgba(255,255,255,.07);padding:8px 10px 11px}
+.gbody .task{background:rgba(25,19,55,.82);box-shadow:none}
+.notebox{border-color:rgba(255,209,102,.24)}
+.emptymsg{padding:64px 16px;color:#aaa0cd}
+#toast{background:#2a2058;border-color:rgba(255,255,255,.16);border-radius:14px;box-shadow:0 18px 48px rgba(5,2,25,.44)}
+#dropOverlay{background:rgba(16,12,36,.9);border-color:var(--yellow);color:#fff}
+
+@media (max-width:720px){
+  .hrow{gap:8px}.brand{inline-size:100%;font-size:17px}.brand .sub{display:none}
+  #fileBar{margin-inline-start:0;inline-size:100%;overflow-x:auto;border-radius:14px}
+  #randRow kbd{display:none}#randBtn .do{display:none}
+  #toolbar{padding:9px}.fmtsel{inline-size:100%;justify-content:flex-end}
+  #tabs{inline-size:100%}.tab{flex:1;text-align:center}
+  .ghead{padding-inline-end:48px;flex-wrap:wrap;gap:8px}
+  .ghead .gname{flex-basis:calc(100% - 40px)}
+  .ghead .gcount{margin-inline-start:36px}
+  .ghead .gbar{flex:1}
+  .gbulk{inset-block-start:12px;min-inline-size:34px;inline-size:34px;block-size:30px;padding:0;font-size:0}
+  .gbulk::after{content:"✓";font-size:15px}.gbulk.all-done::after{content:"↶"}
+}
 </style>
 </head>
 <body>
@@ -550,6 +713,25 @@ function updateGroupHead(gel){
   if(c)c.textContent=g.all.length+'曲 · 完了 '+dn;
   var bar=gel.querySelector('.gbar i');
   if(bar)bar.style.inlineSize=(g.all.length?Math.round(dn/g.all.length*100):0)+'%';
+  var bulk=gel.querySelector('.gbulk');
+  if(bulk){
+    var allDone=dn===g.all.length;
+    bulk.textContent=allDone?'完了を戻す':'まとめて完了';
+    bulk.classList.toggle('all-done',allDone);
+    bulk.setAttribute('aria-label',g.name+'の曲を'+(allDone?'すべて未完了に戻す':'まとめて完了にする'));
+    bulk.title=allDone?'このアーティストの曲をすべて未完了に戻す':'このアーティストの曲をすべて完了にする';
+  }
+}
+
+function setArtistDone(g,val){
+  var changed=0;
+  for(var i=0;i<g.all.length;i++){
+    var t=tasks[g.all[i]];
+    if(t.done!==val){t.done=val;doneCount+=val?1:-1;changed++;}
+  }
+  if(!changed)return;
+  render();updateProgress();updateRand();save();
+  toast(val?'🎉 '+g.name+' の '+changed+'曲をまとめて完了しました':'↶ '+g.name+' の完了を戻しました');
 }
 
 function updateProgress(){
@@ -649,6 +831,8 @@ function groupHTML(g,gi){
   h+='<span class="gname">'+esc(g.name)+'</span>';
   h+='<span class="gcount">'+g.all.length+'曲 · 完了 '+dn+'</span>';
   h+='<span class="gbar"><i style="inline-size:'+pct+'%"></i></span></button>';
+  var allDone=dn===g.all.length;
+  h+='<button class="gbulk'+(allDone?' all-done':'')+'" type="button" aria-label="'+esc(g.name)+'の曲を'+(allDone?'すべて未完了に戻す':'まとめて完了にする')+'" title="このアーティストの曲を'+(allDone?'すべて未完了に戻す':'すべて完了にする')+'">'+(allDone?'完了を戻す':'まとめて完了')+'</button>';
   h+='<div class="gbody'+(layout!=='list'?' '+layout:'')+'"'+(expanded?'':' hidden')+' data-loaded="'+(expanded?'1':'0')+'">';
   if(expanded){for(var j=0;j<g.ids.length;j++)h+=rowHTML(tasks[g.ids[j]],false);}
   h+='</div></div>';
@@ -702,6 +886,16 @@ function updateTabs(){
 
 /* ---------- events ---------- */
 listEl.addEventListener('click',function(e){
+  var bulk=e.target.closest('.gbulk');
+  if(bulk){
+    e.stopPropagation();
+    var bulkGroup=bulk.closest('.group');
+    var bulkData=chunkItems[+bulkGroup.getAttribute('data-gi')];
+    var allDone=true;
+    for(var bi=0;bi<bulkData.all.length;bi++)if(!tasks[bulkData.all[bi]].done){allDone=false;break;}
+    setArtistDone(bulkData,!allDone);
+    return;
+  }
   var chk=e.target.closest('.check');
   if(chk){
     e.stopPropagation();
@@ -844,38 +1038,52 @@ function decodeBuf(buf){
   return new TextDecoder('utf-8').decode(buf);
 }
 
+function loadBuffer(buf,name){
+  var text=decodeBuf(buf);
+  if(text.indexOf(String.fromCharCode(0))!==-1){toast('テキストファイルではないようです（.txt を選択してください）',true);return;}
+  var parsed=parseText(text);
+  if(!parsed.length){toast('曲の行が見つかりませんでした',true);return;}
+  tasks=parsed;fileName=name;
+  fileKey=fnv(text)+'-'+text.length;
+  doneCount=0;
+  var restored=restore();
+  rebuildGroups();
+  view='artist';statusFilter='all';query='';
+  $('search').value='';
+  var segBtns=document.querySelectorAll('#statusSeg button');
+  for(var i=0;i<segBtns.length;i++)segBtns[i].classList.toggle('on',segBtns[i].getAttribute('data-f')==='all');
+  var tabBtns=document.querySelectorAll('#tabs .tab');
+  for(var j=0;j<tabBtns.length;j++)tabBtns[j].classList.toggle('on',tabBtns[j].getAttribute('data-view')==='artist');
+  $('empty').hidden=true;
+  $('listSection').hidden=false;
+  $('fileBar').hidden=false;
+  $('fname').textContent=fileName;
+  $('fname').title=fileName;
+  $('fstat').textContent=num(tasks.length)+'曲';
+  $('progressRow').classList.add('on');
+  $('randRow').classList.add('on');
+  randPick=null;
+  updateTabs();render();updateProgress();updateRand();
+  toast(restored?'✅ 前回の進捗を復元しました（'+num(doneCount)+' / '+num(tasks.length)+'）':'📄 '+truncate(fileName,28)+' を読み込みました（'+num(tasks.length)+'曲）');
+}
+
 function loadFile(file){
   file.arrayBuffer().then(function(buf){
-    var text=decodeBuf(buf);
-    if(text.indexOf(String.fromCharCode(0))!==-1){toast('テキストファイルではないようです（.txt を選択してください）',true);return;}
-    var parsed=parseText(text);
-    if(!parsed.length){toast('曲の行が見つかりませんでした',true);return;}
-    tasks=parsed;fileName=file.name;
-    fileKey=fnv(text)+'-'+text.length;
-    doneCount=0;
-    var restored=restore();
-    rebuildGroups();
-    view='artist';statusFilter='all';query='';
-    $('search').value='';
-    var segBtns=document.querySelectorAll('#statusSeg button');
-    for(var i=0;i<segBtns.length;i++)segBtns[i].classList.toggle('on',segBtns[i].getAttribute('data-f')==='all');
-    var tabBtns=document.querySelectorAll('#tabs .tab');
-    for(var j=0;j<tabBtns.length;j++)tabBtns[j].classList.toggle('on',tabBtns[j].getAttribute('data-view')==='artist');
-    $('empty').hidden=true;
-    $('listSection').hidden=false;
-    $('fileBar').hidden=false;
-    $('fname').textContent=fileName;
-    $('fname').title=fileName;
-    $('fstat').textContent=num(tasks.length)+'曲';
-    $('progressRow').classList.add('on');
-    $('randRow').classList.add('on');
-    randPick=null;
-    updateTabs();render();updateProgress();updateRand();
-    toast(restored?'✅ 前回の進捗を復元しました（'+num(doneCount)+' / '+num(tasks.length)+'）':'📄 '+truncate(fileName,28)+' を読み込みました（'+num(tasks.length)+'曲）');
+    loadBuffer(buf,file.name);
   }).catch(function(){
     toast('ファイルを読み込めませんでした',true);
   });
 }
+
+/* 起動時は master.txt を既定の曲リストとして読み込む */
+fetch('master.txt').then(function(response){
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  return response.arrayBuffer();
+}).then(function(buf){
+  loadBuffer(buf,'master.txt');
+}).catch(function(){
+  toast('master.txt を読み込めませんでした',true);
+});
 
 })();
 </script>
