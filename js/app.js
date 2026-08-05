@@ -109,9 +109,18 @@ function drawRandom(exclude = null) {
   state.randPick = pool[Math.floor(Math.random() * pool.length)];
 }
 
+function syncSearchToRandomArtist() {
+  const artist = state.randPick?.artist || '';
+  elements.search.value = artist;
+  state.query = artist.trim();
+  renderer.render();
+}
+
 function refreshRandom() {
+  const previousPick = state.randPick;
   if (!state.randPick || state.randPick.done) drawRandom();
   renderer.updateRandom();
+  if (state.randPick !== previousPick) syncSearchToRandomArtist();
 }
 
 function setDone(task, value) {
@@ -300,8 +309,10 @@ elements.randomButton.addEventListener('click', () => {
 
 byId('rerollBtn').addEventListener('click', () => {
   if (!state.tasks.length) return;
+  const previousPick = state.randPick;
   drawRandom(state.randPick);
   renderer.updateRandom();
+  if (state.randPick !== previousPick) syncSearchToRandomArtist();
 });
 
 document.addEventListener('keydown', (event) => {
