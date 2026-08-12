@@ -89,14 +89,18 @@ async function copyText(text) {
   return legacyCopy(text);
 }
 
-async function copyTask(task, markDone) {
+async function copyTask(task, markDone, advanceNextTrack = true) {
   const text = copyPayload(task);
   const copied = await copyText(text);
   if (!copied) {
     showToast('コピーに失敗しました。もう一度お試しください', true);
     return;
   }
-  if (markDone && !task.done) setDone(task, true);
+  if (markDone && !task.done) {
+    setDone(task, true, advanceNextTrack);
+  } else if (advanceNextTrack && task === state.randPick) {
+    refreshRandom();
+  }
   showToast(`コピーしました — ${truncate(text, 42)}`);
 }
 
@@ -123,7 +127,7 @@ function refreshRandom() {
   if (state.randPick !== previousPick) syncSearchToRandomArtist();
 }
 
-function setDone(task, value) {
+function setDone(task, value, advanceNextTrack = true) {
   if (task.done === value) return;
   task.done = value;
   state.doneCount += value ? 1 : -1;
@@ -144,7 +148,7 @@ function setDone(task, value) {
   }
 
   renderer.updateProgress();
-  refreshRandom();
+  if (advanceNextTrack) refreshRandom();
   persistProgress();
 }
 
@@ -257,7 +261,7 @@ elements.list.addEventListener('click', (event) => {
   }
 
   const row = event.target.closest('.task');
-  if (row) copyTask(state.tasks[Number(row.dataset.id)], !event.shiftKey);
+  if (row) copyTask(state.tasks[Number(row.dataset.id)], !event.shiftKey, false);
 });
 
 elements.list.addEventListener('keydown', (event) => {
@@ -265,7 +269,7 @@ elements.list.addEventListener('keydown', (event) => {
   const row = event.target.closest('.task');
   if (!row) return;
   event.preventDefault();
-  copyTask(state.tasks[Number(row.dataset.id)], !event.shiftKey);
+  copyTask(state.tasks[Number(row.dataset.id)], !event.shiftKey, false);
 });
 
 byId('tabs').addEventListener('click', (event) => {
@@ -304,7 +308,7 @@ elements.formatSelect.addEventListener('change', (event) => {
 });
 
 elements.randomButton.addEventListener('click', () => {
-  if (state.randPick && !state.randPick.done) copyTask(state.randPick, true);
+  if (state.randPick) copyTask(state.randPick, true);
 });
 
 byId('rerollBtn').addEventListener('click', () => {
@@ -318,7 +322,7 @@ byId('rerollBtn').addEventListener('click', () => {
 document.addEventListener('keydown', (event) => {
   if (!['r', 'n'].includes((event.key || '').toLowerCase())) return;
   if (['input', 'textarea', 'select'].includes((event.target.tagName || '').toLowerCase())) return;
-  if (state.randPick && !state.randPick.done) copyTask(state.randPick, true);
+  if (state.randPick) copyTask(state.randPick, true);
 });
 
 byId('resetBtn').addEventListener('click', () => {
