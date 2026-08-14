@@ -26,17 +26,21 @@ export function parseSongText(input) {
   for (const line of text.split(/\r\n|\r|\n/)) {
     const raw = line.trim();
     if (!raw) continue;
-    if (seen.has(raw)) {
-      tasks[seen.get(raw)].count += 1;
+
+    const task = classifyLine(raw);
+    const duplicateKey = task.kind === 'normal'
+      ? `song:${JSON.stringify([task.artist.toLocaleLowerCase(), task.title.toLocaleLowerCase()])}`
+      : `exception:${task.title.toLocaleLowerCase()}`;
+    if (seen.has(duplicateKey)) {
+      tasks[seen.get(duplicateKey)].count += 1;
       continue;
     }
 
-    const task = classifyLine(raw);
     task.id = tasks.length;
     task.raw = raw;
     task.done = false;
     task.count = 1;
-    seen.set(raw, task.id);
+    seen.set(duplicateKey, task.id);
     tasks.push(task);
   }
   return tasks;
