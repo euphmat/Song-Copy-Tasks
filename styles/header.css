@@ -85,20 +85,20 @@
 .quiet-button.danger:hover { background: var(--danger-soft); color: var(--danger); }
 
 .next-card { display: flex; overflow: hidden; }
-#randBtn { display: flex; flex: 1; align-items: center; gap: 10px; min-inline-size: 0; background: transparent; padding: 9px 12px; text-align: start; }
-#randBtn:hover { background: var(--accent-soft); }
-#randBtn .shuffle { display: grid; place-items: center; inline-size: 30px; block-size: 30px; flex: none; border-radius: 9px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--accent-ink); font-size: 17px; font-weight: 900; }
-#randBtn .nlabel { display: grid; flex: 1; min-inline-size: 0; line-height: 1.25; }
-#randBtn .nlabel small { color: var(--accent); font-size: 8.5px; font-weight: 900; letter-spacing: .16em; }
-#randBtn .nt, #randBtn .na { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#randBtn .nt { font-size: 12.5px; }
-#randBtn .na { color: var(--muted); font-size: 10.5px; }
-#randBtn .do { flex: none; color: var(--faint); font-size: 10px; font-weight: 700; white-space: nowrap; }
-#randBtn:hover .do { color: var(--accent); }
-#randBtn.alldone .nt { color: var(--accent); }
-#randBtn.alldone .do { visibility: hidden; }
-#rerollBtn { inline-size: 42px; flex: none; border-inline-start: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 19px; }
-#rerollBtn:hover { background: var(--panel-2); color: var(--accent); }
+.next-track { display: flex; flex: 1; align-items: center; gap: 10px; min-inline-size: 0; padding: 9px 12px; text-align: start; }
+.next-track .shuffle { display: grid; place-items: center; inline-size: 30px; block-size: 30px; flex: none; border-radius: 9px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--accent-ink); font-size: 17px; font-weight: 900; }
+.next-track .nlabel { display: grid; flex: 1; min-inline-size: 0; line-height: 1.25; }
+.next-track .nlabel small { color: var(--accent); font-size: 8.5px; font-weight: 900; letter-spacing: .16em; }
+.next-track .nt, .next-track .na { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.next-track .nt { font-size: 12.5px; }
+.next-track .na { color: var(--muted); font-size: 10.5px; }
+.next-track .do { flex: none; color: var(--faint); font-size: 10px; font-weight: 700; white-space: nowrap; }
+.next-track.alldone .nt { color: var(--accent); }
+.next-track.alldone .do { visibility: hidden; }
+.complete-next { inline-size: 48px; flex: none; border-inline-start: 1px solid var(--border); background: transparent; color: var(--accent); font-size: 20px; font-weight: 900; }
+.complete-next:hover { background: var(--accent-soft); color: var(--accent); }
+.complete-next:active { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.complete-next:disabled { background: transparent; color: var(--faint); opacity: .45; }
 
 @media (max-width: 850px) {
   .workspace-header { grid-template-columns: 1fr; }
@@ -119,5 +119,5 @@
   #pcount { align-self: flex-end; margin-block-start: -1px; }
   .quiet-button { grid-column: 3; grid-row: 1; font-size: 0; }
   .quiet-button::after { content: "リセット"; font-size: 10px; }
-  #randBtn .do { display: none; }
+  .next-track .do { display: none; }
 }

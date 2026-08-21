@@ -35,7 +35,8 @@ const elements = {
   formatSelect: byId('fmtSel'),
   progressFill: byId('pfill'),
   progressCount: byId('pcount'),
-  randomButton: byId('randBtn'),
+  randomDisplay: byId('randDisplay'),
+  completeNextButton: byId('completeNextBtn'),
   randomTitle: byId('randTitle'),
   randomArtist: byId('randArtist'),
   artistCount: byId('nArtist'),
@@ -328,15 +329,8 @@ elements.formatSelect.addEventListener('change', (event) => {
   persistProgress();
 });
 
-elements.randomButton.addEventListener('click', () => {
+elements.completeNextButton.addEventListener('click', () => {
   completeDisplayedNextTrack();
-});
-
-byId('rerollBtn').addEventListener('click', () => {
-  if (!state.tasks.length) return;
-  const previousPick = state.randPick;
-  drawRandom(state.randPick);
-  displayRandom(previousPick);
 });
 
 document.addEventListener('keydown', (event) => {

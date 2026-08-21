@@ -121,12 +121,14 @@ export function createRenderer(state, elements) {
 
   function updateRandom() {
     if (!state.randPick) {
-      elements.randomButton.classList.add('alldone');
+      elements.randomDisplay.classList.add('alldone');
+      elements.completeNextButton.disabled = true;
       elements.randomTitle.textContent = 'すべての曲をコピーしました！';
       elements.randomArtist.textContent = 'おつかれさまでした';
       return;
     }
-    elements.randomButton.classList.remove('alldone');
+    elements.randomDisplay.classList.remove('alldone');
+    elements.completeNextButton.disabled = false;
     elements.randomTitle.textContent = state.randPick.title;
     elements.randomArtist.textContent = state.randPick.artist;
   }
