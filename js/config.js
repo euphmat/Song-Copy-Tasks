@@ -1,5 +1,8 @@
 export const THEMES = [
   { id: 'midnight', label: '星夜' },
+  { id: 'aurora-glass', label: 'オーロラグラス' },
+  { id: 'editorial-noir', label: 'ノワール・シック' },
+  { id: 'studio-grid', label: 'スタジオ・グリッド' },
   { id: 'graphite', label: 'グラファイト' },
   { id: 'snow', label: 'スノー' },
   { id: 'ocean', label: 'オーシャン' },
