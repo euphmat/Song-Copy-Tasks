@@ -89,7 +89,7 @@ async function copyText(text) {
   return legacyCopy(text);
 }
 
-async function copyTask(task, markDone, advanceNextTrack = true) {
+async function copyTask(task, markDone) {
   const text = copyPayload(task);
   const copied = await copyText(text);
   if (!copied) {
@@ -97,11 +97,20 @@ async function copyTask(task, markDone, advanceNextTrack = true) {
     return;
   }
   if (markDone && !task.done) {
-    setDone(task, true, advanceNextTrack);
-  } else if (advanceNextTrack && task === state.randPick) {
-    refreshRandom();
+    setDone(task, true, false);
   }
   showToast(`コピーしました — ${truncate(text, 42)}`);
+}
+
+async function copyDisplayedNextTrack(task) {
+  if (!task) return;
+  const text = copyPayload(task);
+  const copied = await copyText(text);
+  if (!copied) {
+    showToast('NEXT TRACK のコピーに失敗しました。もう一度お試しください', true);
+    return;
+  }
+  showToast(`NEXT TRACK をコピーしました — ${truncate(text, 42)}`);
 }
 
 function drawRandom(exclude = null) {
@@ -120,11 +129,23 @@ function syncSearchToRandomArtist() {
   renderer.render();
 }
 
+function displayRandom(previousPick) {
+  renderer.updateRandom();
+  if (state.randPick === previousPick) return;
+  syncSearchToRandomArtist();
+  copyDisplayedNextTrack(state.randPick);
+}
+
 function refreshRandom() {
   const previousPick = state.randPick;
   if (!state.randPick || state.randPick.done) drawRandom();
-  renderer.updateRandom();
-  if (state.randPick !== previousPick) syncSearchToRandomArtist();
+  displayRandom(previousPick);
+}
+
+function completeDisplayedNextTrack() {
+  if (!state.randPick) return;
+  if (state.randPick.done) refreshRandom();
+  else setDone(state.randPick, true);
 }
 
 function setDone(task, value, advanceNextTrack = true) {
@@ -261,7 +282,7 @@ elements.list.addEventListener('click', (event) => {
   }
 
   const row = event.target.closest('.task');
-  if (row) copyTask(state.tasks[Number(row.dataset.id)], !event.shiftKey, false);
+  if (row) copyTask(state.tasks[Number(row.dataset.id)], !event.shiftKey);
 });
 
 elements.list.addEventListener('keydown', (event) => {
@@ -269,7 +290,7 @@ elements.list.addEventListener('keydown', (event) => {
   const row = event.target.closest('.task');
   if (!row) return;
   event.preventDefault();
-  copyTask(state.tasks[Number(row.dataset.id)], !event.shiftKey, false);
+  copyTask(state.tasks[Number(row.dataset.id)], !event.shiftKey);
 });
 
 byId('tabs').addEventListener('click', (event) => {
@@ -308,21 +329,20 @@ elements.formatSelect.addEventListener('change', (event) => {
 });
 
 elements.randomButton.addEventListener('click', () => {
-  if (state.randPick) copyTask(state.randPick, true);
+  completeDisplayedNextTrack();
 });
 
 byId('rerollBtn').addEventListener('click', () => {
   if (!state.tasks.length) return;
   const previousPick = state.randPick;
   drawRandom(state.randPick);
-  renderer.updateRandom();
-  if (state.randPick !== previousPick) syncSearchToRandomArtist();
+  displayRandom(previousPick);
 });
 
 document.addEventListener('keydown', (event) => {
   if (!['r', 'n'].includes((event.key || '').toLowerCase())) return;
   if (['input', 'textarea', 'select'].includes((event.target.tagName || '').toLowerCase())) return;
-  if (state.randPick) copyTask(state.randPick, true);
+  completeDisplayedNextTrack();
 });
 
 byId('resetBtn').addEventListener('click', () => {
