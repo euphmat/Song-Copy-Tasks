@@ -103,15 +103,16 @@ async function copyTask(task, markDone) {
   showToast(`コピーしました — ${truncate(text, 42)}`);
 }
 
-async function copyDisplayedNextTrack(task) {
-  if (!task) return;
+async function copyDisplayedNextTrack(task, announce = true) {
+  if (!task) return null;
   const text = copyPayload(task);
   const copied = await copyText(text);
   if (!copied) {
-    showToast('NEXT TRACK のコピーに失敗しました。もう一度お試しください', true);
-    return;
+    if (announce) showToast('NEXT TRACK のコピーに失敗しました。もう一度お試しください', true);
+    return false;
   }
-  showToast(`NEXT TRACK をコピーしました — ${truncate(text, 42)}`);
+  if (announce) showToast(`NEXT TRACK をコピーしました — ${truncate(text, 42)}`);
+  return true;
 }
 
 function drawRandom(exclude = null) {
@@ -130,17 +131,17 @@ function syncSearchToRandomArtist() {
   renderer.render();
 }
 
-function displayRandom(previousPick) {
+function displayRandom(previousPick, announceCopy = true) {
   renderer.updateRandom();
-  if (state.randPick === previousPick) return;
+  if (state.randPick === previousPick) return Promise.resolve(null);
   syncSearchToRandomArtist();
-  copyDisplayedNextTrack(state.randPick);
+  return copyDisplayedNextTrack(state.randPick, announceCopy);
 }
 
-function refreshRandom() {
+function refreshRandom(announceCopy = true) {
   const previousPick = state.randPick;
   if (!state.randPick || state.randPick.done) drawRandom();
-  displayRandom(previousPick);
+  return displayRandom(previousPick, announceCopy);
 }
 
 function completeDisplayedNextTrack() {
@@ -207,7 +208,7 @@ function resetControls() {
   document.querySelectorAll('#tabs .tab').forEach((button) => button.classList.toggle('on', button.dataset.view === 'artist'));
 }
 
-function loadBuffer(buffer, name) {
+async function loadBuffer(buffer, name) {
   const text = decodeBuffer(buffer);
   if (text.includes(String.fromCharCode(0))) {
     showToast('テキストファイルではないようです（.txt を選択してください）', true);
@@ -241,14 +242,21 @@ function loadBuffer(buffer, name) {
   renderer.updateTabs();
   renderer.render();
   renderer.updateProgress();
-  refreshRandom();
-  showToast(restored
+  const copiedNextTrack = await refreshRandom(false);
+  const loadedMessage = restored
     ? `前回の進捗を復元しました（${formatNumber(state.doneCount)} / ${formatNumber(state.tasks.length)}）`
-    : `${truncate(state.fileName, 28)} を読み込みました（${formatNumber(state.tasks.length)}曲）`);
+    : `${truncate(state.fileName, 28)} を読み込みました（${formatNumber(state.tasks.length)}曲）`;
+  if (copiedNextTrack === null) {
+    showToast(loadedMessage);
+  } else {
+    showToast(copiedNextTrack
+      ? `${loadedMessage}・NEXT TRACK をコピーしました`
+      : `${loadedMessage}。NEXT TRACK のコピーに失敗しました`, !copiedNextTrack);
+  }
 }
 
 async function loadFile(file) {
-  try { loadBuffer(await file.arrayBuffer(), file.name); }
+  try { await loadBuffer(await file.arrayBuffer(), file.name); }
   catch (error) { showToast('ファイルを読み込めませんでした', true); }
 }
 
