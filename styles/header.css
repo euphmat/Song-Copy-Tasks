@@ -130,6 +130,7 @@
   .theme-control select { max-inline-size: 112px; font-size: 12px; }
   .header-button { inline-size: 38px; overflow: hidden; padding: 0; font-size: 0; }
   .file-open-button::after { content: "↗"; font-size: 17px; }
+  .spotify-button { justify-content: center; }
   .spotify-button::after { content: "♫"; color: #1ed760; font-size: 17px; }
   .file-card { grid-template-columns: auto minmax(0, 1fr) auto; }
   .progress-summary { grid-column: 1 / -1; grid-row: 2; }
