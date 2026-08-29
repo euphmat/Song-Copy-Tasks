@@ -26,12 +26,16 @@
         </a>
 
         <div class="header-actions">
+          <button class="header-button spotify-button" id="spotifyBtn" type="button" title="Spotify と接続する" aria-pressed="false">
+            <span class="spotify-status-dot" aria-hidden="true"></span>
+            <span id="spotifyLabel">Spotify 接続</span>
+          </button>
           <label class="theme-control" for="themeSelect">
             <span class="theme-dot" aria-hidden="true"></span>
             <span class="control-label">テーマ</span>
             <select id="themeSelect" aria-label="表示テーマを変更"></select>
           </label>
-          <button class="header-button" id="reloadBtn" type="button">
+          <button class="header-button file-open-button" id="reloadBtn" type="button">
             <span aria-hidden="true">↗</span> ファイルを開く
           </button>
         </div>

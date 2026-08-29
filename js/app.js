@@ -1,6 +1,7 @@
 import { DEFAULT_LIST_FILE } from './config.js';
 import { buildArtistGroups, isSong, parseSongText } from './parser.js';
 import { createRenderer } from './render.js';
+import { createSpotifyController } from './spotify.js';
 import { loadLayout, restoreProgress, saveProgress, storeLayout } from './storage.js';
 import { setupThemePicker } from './theme.js';
 import { byId, debounce, decodeBuffer, fnvHash, formatNumber, truncate } from './utils.js';
@@ -60,6 +61,25 @@ function showToast(message, isError = false) {
   toastTimer = setTimeout(() => toast.classList.remove('show'), 2400);
 }
 
+const spotify = createSpotifyController({
+  button: byId('spotifyBtn'),
+  label: byId('spotifyLabel'),
+  notify: showToast
+});
+
+void spotify.handleCallback();
+
+async function playOnSpotify(task, text) {
+  if (!spotify.isConnected()) return;
+  showToast(`Spotify で検索中 — ${truncate(text, 38)}`);
+  try {
+    const track = await spotify.play(task);
+    if (track) showToast(`▶ Spotify で再生中 — ${truncate(`${track.artists[0]?.name || ''} ${track.name}`.trim(), 42)}`);
+  } catch (error) {
+    showToast(error.message || 'Spotify で再生できませんでした', true);
+  }
+}
+
 function copyPayload(task) {
   if (!isSong(task)) return task.raw;
   if (state.fmt === 'dash') return `${task.artist} - ${task.title}`;
@@ -101,6 +121,7 @@ async function copyTask(task, markDone) {
     setDone(task, true, false);
   }
   showToast(`コピーしました — ${truncate(text, 42)}`);
+  void playOnSpotify(task, text);
 }
 
 async function copyDisplayedNextTrack(task, announce = true) {
@@ -112,6 +133,7 @@ async function copyDisplayedNextTrack(task, announce = true) {
     return false;
   }
   if (announce) showToast(`NEXT TRACK をコピーしました — ${truncate(text, 42)}`);
+  void playOnSpotify(task, text);
   return true;
 }
 

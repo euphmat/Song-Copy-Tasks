@@ -24,5 +24,8 @@ export const DEFAULT_THEME = 'midnight';
 export const DEFAULT_LIST_FILE = 'master.txt';
 export const STORAGE_PREFIX = 'songtasks:';
 
+// Spotify の Client ID は公開情報です。Client Secret はブラウザーに置かないでください。
+export const SPOTIFY_CLIENT_ID = 'a34220a4edb94661a77a62a7a3408780';
+
 // Spotify検索のノイズになりやすい末尾表記。
 export const SONG_SUFFIX_RE = /(remaster|remix|live|version|edit|acoustic|demo|mix|mono|stereo|feat|ft\.|single|deluxe|bonus|instrumental|radio|session|unplugged|(19|20)\d{2})/i;

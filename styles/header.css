@@ -49,6 +49,22 @@
 .theme-control select option { background: var(--panel); color: var(--text); }
 .header-button { padding: 0 13px; color: var(--muted); font-weight: 700; }
 .header-button:hover { border-color: var(--accent-line); background: var(--panel-2); color: var(--text); }
+.spotify-button { display: inline-flex; align-items: center; gap: 7px; }
+.spotify-status-dot {
+  inline-size: 8px;
+  block-size: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--faint);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--faint) 14%, transparent);
+}
+.spotify-button.connected { color: var(--text); }
+.spotify-button.connected .spotify-status-dot {
+  background: #1ed760;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #1ed760 18%, transparent);
+}
+.spotify-button.busy .spotify-status-dot { animation: spotify-pulse 1s ease-in-out infinite; }
+@keyframes spotify-pulse { 50% { opacity: .35; transform: scale(.78); } }
 
 .workspace-header {
   display: grid;
@@ -113,7 +129,8 @@
   .theme-control { padding-inline-start: 8px; }
   .theme-control select { max-inline-size: 112px; font-size: 12px; }
   .header-button { inline-size: 38px; overflow: hidden; padding: 0; font-size: 0; }
-  .header-button::after { content: "↗"; font-size: 17px; }
+  .file-open-button::after { content: "↗"; font-size: 17px; }
+  .spotify-button::after { content: "♫"; color: #1ed760; font-size: 17px; }
   .file-card { grid-template-columns: auto minmax(0, 1fr) auto; }
   .progress-summary { grid-column: 1 / -1; grid-row: 2; }
   #pcount { align-self: flex-end; margin-block-start: -1px; }
