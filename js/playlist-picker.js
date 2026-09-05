@@ -15,7 +15,7 @@ export function createPlaylistPicker({ spotify, input, select, refreshButton, pl
     const id = selectedId();
     select.replaceChildren(new Option('追加先を選択してください', ''));
     for (const playlist of playlists) {
-      const option = new Option(`${playlist.name} — ${playlist.owner}${playlist.writable ? '' : '（閲覧用）'}`, playlist.id);
+      const option = new Option(playlist.name, playlist.id);
       option.disabled = !playlist.writable;
       select.add(option);
     }
