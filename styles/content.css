@@ -147,3 +147,4 @@ main { max-inline-size: 1120px; margin-inline: auto; padding: 26px 20px 80px; }
 .task .add-track:hover { background: var(--accent); color: var(--accent-ink); }
 .task .add-track:disabled { opacity: .5; cursor: wait; }
 .tile .task .add-track { align-self: flex-end; }
+.playlist-target select { flex: 1 1 100%; min-inline-size: 0; max-inline-size: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-soft); color: var(--text); padding: 9px; }

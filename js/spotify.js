@@ -3,7 +3,9 @@ import { SPOTIFY_CLIENT_ID, STORAGE_PREFIX } from './config.js';
 const AUTHORIZE_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
 const API_URL = 'https://api.spotify.com/v1';
-const SCOPES = ['user-modify-playback-state', 'user-read-playback-state', 'playlist-modify-public', 'playlist-modify-private'];
+const ADD_SCOPES = ['playlist-modify-public', 'playlist-modify-private'];
+const READ_SCOPES = ['playlist-read-private', 'playlist-read-collaborative'];
+const SCOPES = ['user-modify-playback-state', 'user-read-playback-state', ...ADD_SCOPES, ...READ_SCOPES];
 const AUTH_KEY = `${STORAGE_PREFIX}spotify-auth`;
 const VERIFIER_KEY = `${STORAGE_PREFIX}spotify-code-verifier`;
 const STATE_KEY = `${STORAGE_PREFIX}spotify-oauth-state`;
@@ -92,7 +94,7 @@ function searchQuery(task) {
   return artist ? `track:"${title}" artist:"${artist}"` : title;
 }
 
-export function createSpotifyController({ button, label, notify }) {
+export function createSpotifyController({ button, label, notify, onDisconnect = () => {} }) {
   let auth = readAuth();
   let deviceCache = null;
   let playSequence = 0;
@@ -102,8 +104,8 @@ export function createSpotifyController({ button, label, notify }) {
     button.classList.toggle('connected', connected);
     button.classList.toggle('busy', busy);
     button.setAttribute('aria-pressed', String(connected));
-    button.title = connected ? (canAdd() ? 'Spotify 接続済み（クリックで解除）' : '追加権限のため Spotify に再接続する') : 'Spotify と接続する';
-    label.textContent = busy ? 'Spotify 接続中…' : (connected ? (canAdd() ? 'Spotify 接続済み' : 'Spotify 再接続') : 'Spotify 接続');
+    button.title = connected ? (hasScopes(SCOPES) ? 'Spotify 接続済み（クリックで解除）' : 'プレイリストの取得・追加権限のため Spotify に再接続する') : 'Spotify と接続する';
+    label.textContent = busy ? 'Spotify 接続中…' : (connected ? (hasScopes(SCOPES) ? 'Spotify 接続済み' : 'Spotify 再接続') : 'Spotify 接続');
   }
 
   async function exchangeToken(body) {
@@ -281,9 +283,35 @@ export function createSpotifyController({ button, label, notify }) {
     return track;
   }
 
-  function canAdd() {
+  function hasScopes(scopes) {
     const granted = (auth?.scope || '').split(' ');
-    return SCOPES.every((scope) => granted.includes(scope));
+    return scopes.every((scope) => granted.includes(scope));
+  }
+
+  function canAdd() { return hasScopes(ADD_SCOPES); }
+
+  async function listPlaylists() {
+    if (!auth) throw new SpotifyError('Spotify に接続してプレイリストを取得してください');
+    if (!hasScopes(READ_SCOPES)) throw new SpotifyError('一覧の取得権限が必要です。上部の Spotify 再接続を押してください');
+    const user = await api('/me');
+    const playlists = new Map();
+    let offset = 0;
+    while (true) {
+      const page = await api(`/me/playlists?limit=50&offset=${offset}`);
+      for (const item of page.items || []) {
+        if (!item?.id) continue;
+        playlists.set(item.id, {
+          id: item.id, name: item.name || '（名前なし）',
+          owner: item.owner?.display_name || item.owner?.id || '所有者不明',
+          writable: item.owner?.id === user.id || item.collaborative === true
+        });
+      }
+      if (!page.next) break;
+      const count = page.items?.length || 0;
+      if (!count) throw new SpotifyError('プレイリスト一覧を取得できませんでした。再度更新してください');
+      offset += count;
+    }
+    return [...playlists.values()].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
   }
 
   async function playbackPlaylist() {
@@ -314,7 +342,7 @@ export function createSpotifyController({ button, label, notify }) {
   }
 
   button.addEventListener('click', async () => {
-    if (auth?.refreshToken && !canAdd()) {
+    if (auth?.refreshToken && !hasScopes(SCOPES)) {
       updateButton(true);
       try { await connect(); }
       catch (error) { updateButton(); notify(error.message, true); }
@@ -327,6 +355,7 @@ export function createSpotifyController({ button, label, notify }) {
       deviceCache = null;
       clearAuth();
       updateButton();
+      onDisconnect();
       notify('Spotify との接続を解除しました');
       return;
     }
@@ -345,6 +374,7 @@ export function createSpotifyController({ button, label, notify }) {
     isConnected: () => Boolean(auth?.refreshToken),
     play,
     playbackPlaylist,
+    listPlaylists,
     addAndPlay
   };
 }

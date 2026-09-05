@@ -1,7 +1,8 @@
-import { DEFAULT_LIST_FILE, STORAGE_PREFIX } from './config.js';
+import { DEFAULT_LIST_FILE } from './config.js';
 import { buildArtistGroups, isSong, parseSongText } from './parser.js';
 import { createRenderer } from './render.js';
 import { createSpotifyController, parsePlaylistId } from './spotify.js';
+import { createPlaylistPicker } from './playlist-picker.js';
 import { loadLayout, restoreProgress, saveProgress, storeLayout } from './storage.js';
 import { setupThemePicker } from './theme.js';
 import { byId, debounce, decodeBuffer, fnvHash, formatNumber, truncate } from './utils.js';
@@ -64,29 +65,19 @@ function showToast(message, isError = false) {
 const spotify = createSpotifyController({
   button: byId('spotifyBtn'),
   label: byId('spotifyLabel'),
-  notify: showToast
+  notify: showToast,
+  onDisconnect: () => playlistPicker.clear()
 });
-
-void spotify.handleCallback();
 
 const playlistInput = byId('playlistUrl');
 const playlistStatus = byId('playlistStatus');
-const playlistKey = `${STORAGE_PREFIX}spotify-playlist`;
-try { playlistInput.value = localStorage.getItem(playlistKey) || ''; } catch (error) { /* unavailable */ }
-playlistInput.addEventListener('input', () => {
-  playlistStatus.textContent = '';
-  try { localStorage.setItem(playlistKey, playlistInput.value); } catch (error) { /* unavailable */ }
+const playlistPicker = createPlaylistPicker({
+  spotify, input: playlistInput, select: byId('playlistSelect'),
+  refreshButton: byId('refreshPlaylists'), playbackButton: byId('usePlaybackPlaylist'),
+  status: playlistStatus
 });
-byId('usePlaybackPlaylist').addEventListener('click', async (event) => {
-  const button = event.currentTarget;
-  button.disabled = true;
-  try {
-    const id = await spotify.playbackPlaylist();
-    playlistInput.value = `https://open.spotify.com/playlist/${id}`;
-    playlistInput.dispatchEvent(new Event('input'));
-    playlistStatus.textContent = 'Desktop の再生元を追加先に設定しました';
-  } catch (error) { playlistStatus.textContent = error.message; }
-  finally { button.disabled = false; }
+void spotify.handleCallback().then(() => {
+  if (spotify.isConnected()) return playlistPicker.refresh();
 });
 
 let addingTrack = false;

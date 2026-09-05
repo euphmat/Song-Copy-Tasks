@@ -101,10 +101,13 @@ The Chainsmokers - Closer</pre>
       </nav>
 
       <div class="playlist-target">
-        <label for="playlistUrl">＋ の追加先</label>
+        <label for="playlistSelect">＋ の追加先</label>
+        <select id="playlistSelect" aria-describedby="playlistHelp"><option value="">Spotify に接続してください</option></select>
+        <button id="refreshPlaylists" type="button">一覧を更新</button>
+        <label for="playlistUrl">リンクで指定</label>
         <input id="playlistUrl" type="url" placeholder="Spotify のプレイリストリンク" aria-describedby="playlistHelp">
         <button id="usePlaybackPlaylist" type="button">Desktop の再生元を使う</button>
-        <small id="playlistHelp">表示中のプレイリストは自動取得できません。共有リンクを貼るか、Desktop でそのプレイリストを再生して取得してください。</small>
+        <small id="playlistHelp">Spotify で新しく作ったプレイリストは「一覧を更新」で反映します。フォルダ分けは表示されません。閲覧用のプレイリストは選択できません。</small>
         <span id="playlistStatus" role="status"></span>
       </div>
       <div id="toolbar">

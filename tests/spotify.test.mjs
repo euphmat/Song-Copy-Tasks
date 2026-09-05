@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createSpotifyController, parsePlaylistId } from '../js/spotify.js';
 
 const id = '3cEYpjA9oz9GiPac4AsH4n';
-const scope = 'user-modify-playback-state user-read-playback-state playlist-modify-public playlist-modify-private';
+const scope = 'user-modify-playback-state user-read-playback-state playlist-modify-public playlist-modify-private playlist-read-private playlist-read-collaborative';
 function controller(routes, granted = scope) {
   globalThis.localStorage = {
     getItem: () => JSON.stringify({ accessToken: 'test', refreshToken: 'test', expiresAt: Date.now() + 60000, scope: granted }),
@@ -12,7 +12,7 @@ function controller(routes, granted = scope) {
   const calls = [];
   globalThis.fetch = async (url, options = {}) => {
     const path = new URL(url).pathname.replace('/v1', '');
-    calls.push({ path, ...options });
+    calls.push({ path, query: new URL(url).search, ...options });
     return routes(path, options);
   };
   const button = { classList: { toggle() {} }, setAttribute() {}, addEventListener() {} };
@@ -63,4 +63,28 @@ test('imports only Desktop playlist playback, rejects mobile and empty state', a
   }
   const { api } = controller(() => json({ device: { type: 'Computer' }, context: { type: 'playlist', uri: `spotify:playlist:${id}` } }));
   assert.equal(await api.playbackPlaylist(), id);
+});
+
+test('loads all pages, skips nulls, distinguishes owned and followed playlists', async () => {
+  let page = 0;
+  const { api, calls } = controller(path => {
+    if (path === '/me') return json({ id: 'me' });
+    assert.equal(path, '/me/playlists');
+    page += 1;
+    return page === 1
+      ? json({ items: [null, { id: 'own', name: 'Anime', owner: { id: 'me' } }], next: 'next' })
+      : json({ items: [{ id: 'other', name: 'Pops', owner: { id: 'other' } }, { id: 'shared', name: 'Shared', collaborative: true, owner: { id: 'other' } }], next: null });
+  });
+  const result = await api.listPlaylists();
+  assert.equal(result.length, 3);
+  assert.equal(result.find(item => item.id === 'own').writable, true);
+  assert.equal(result.find(item => item.id === 'other').writable, false);
+  assert.equal(result.find(item => item.id === 'shared').writable, true);
+  assert.equal(calls.at(-1).query, '?limit=50&offset=2');
+});
+test('legacy connection requests read permission without breaking add permission', async () => {
+  const { api, calls } = controller(route, 'user-modify-playback-state user-read-playback-state playlist-modify-public playlist-modify-private');
+  await assert.rejects(api.listPlaylists(), /一覧の取得権限/);
+  assert.equal(calls.length, 0);
+  assert.equal((await api.addAndPlay({ title: 'Song' }, id)).played, true);
 });
