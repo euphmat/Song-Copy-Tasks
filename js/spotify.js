@@ -3,7 +3,7 @@ import { SPOTIFY_CLIENT_ID, STORAGE_PREFIX } from './config.js';
 const AUTHORIZE_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
 const API_URL = 'https://api.spotify.com/v1';
-const SCOPES = ['user-modify-playback-state', 'user-read-playback-state'];
+const SCOPES = ['user-modify-playback-state', 'user-read-playback-state', 'playlist-modify-public', 'playlist-modify-private'];
 const AUTH_KEY = `${STORAGE_PREFIX}spotify-auth`;
 const VERIFIER_KEY = `${STORAGE_PREFIX}spotify-code-verifier`;
 const STATE_KEY = `${STORAGE_PREFIX}spotify-oauth-state`;
@@ -102,8 +102,8 @@ export function createSpotifyController({ button, label, notify }) {
     button.classList.toggle('connected', connected);
     button.classList.toggle('busy', busy);
     button.setAttribute('aria-pressed', String(connected));
-    button.title = connected ? 'Spotify 接続済み（クリックで解除）' : 'Spotify と接続する';
-    label.textContent = busy ? 'Spotify 接続中…' : (connected ? 'Spotify 接続済み' : 'Spotify 接続');
+    button.title = connected ? (canAdd() ? 'Spotify 接続済み（クリックで解除）' : '追加権限のため Spotify に再接続する') : 'Spotify と接続する';
+    label.textContent = busy ? 'Spotify 接続中…' : (connected ? (canAdd() ? 'Spotify 接続済み' : 'Spotify 再接続') : 'Spotify 接続');
   }
 
   async function exchangeToken(body) {
@@ -121,6 +121,7 @@ export function createSpotifyController({ button, label, notify }) {
     auth = {
       accessToken: data.access_token,
       refreshToken: data.refresh_token || previousRefreshToken,
+      scope: data.scope ?? auth?.scope ?? '',
       expiresAt: Date.now() + (Number(data.expires_in) || 3600) * 1000 - 60_000
     };
     writeAuth(auth);
@@ -280,7 +281,45 @@ export function createSpotifyController({ button, label, notify }) {
     return track;
   }
 
+  function canAdd() {
+    const granted = (auth?.scope || '').split(' ');
+    return SCOPES.every((scope) => granted.includes(scope));
+  }
+
+  async function playbackPlaylist() {
+    const playback = await api('/me/player');
+    if (String(playback?.device?.type).toLowerCase() !== 'computer'
+      || playback?.context?.type !== 'playlist') {
+      throw new SpotifyError('Desktop で追加先のプレイリストから曲を再生し、もう一度取得してください');
+    }
+    return parsePlaylistId(playback.context.uri);
+  }
+
+  async function addAndPlay(task, playlistId) {
+    if (!canAdd()) throw new SpotifyError('追加権限が必要です。上部の Spotify ボタンから再接続してください');
+    if (!/^[A-Za-z0-9]{22}$/.test(playlistId || '')) throw new SpotifyError('追加先のプレイリストリンクを指定してください');
+    const [track, device] = await Promise.all([findTrack(task), desktopDevice()]);
+    await api(`/playlists/${playlistId}/items`, {
+      method: 'POST', body: JSON.stringify({ uris: [track.uri] })
+    });
+    // Addition has committed: a playback failure must never invite retrying the addition.
+    try {
+      await api(`/me/player/play?${new URLSearchParams({ device_id: device.id })}`, {
+        method: 'PUT', body: JSON.stringify({ uris: [track.uri] })
+      });
+      return { track, played: true };
+    } catch (error) {
+      return { track, played: false, playbackError: error.message };
+    }
+  }
+
   button.addEventListener('click', async () => {
+    if (auth?.refreshToken && !canAdd()) {
+      updateButton(true);
+      try { await connect(); }
+      catch (error) { updateButton(); notify(error.message, true); }
+      return;
+    }
     if (auth?.refreshToken) {
       if (!window.confirm('Spotify との接続を解除しますか？')) return;
       playSequence += 1;
@@ -304,6 +343,20 @@ export function createSpotifyController({ button, label, notify }) {
   return {
     handleCallback,
     isConnected: () => Boolean(auth?.refreshToken),
-    play
+    play,
+    playbackPlaylist,
+    addAndPlay
   };
+}
+
+export function parsePlaylistId(value) {
+  const input = String(value || '').trim();
+  const uri = /^spotify:playlist:([A-Za-z0-9]{22})$/.exec(input);
+  if (uri) return uri[1];
+  try {
+    const url = new URL(input);
+    const match = /^\/playlist\/([A-Za-z0-9]{22})\/?$/.exec(url.pathname);
+    if (url.protocol === 'https:' && url.hostname === 'open.spotify.com' && match) return match[1];
+  } catch (error) { /* invalid link */ }
+  throw new SpotifyError('Spotify のプレイリストリンクを入力してください');
 }

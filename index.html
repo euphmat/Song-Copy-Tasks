@@ -100,6 +100,13 @@ The Chainsmokers - Closer</pre>
         <button class="tab" data-view="ex" type="button">例外 <span class="n" id="nEx">0</span></button>
       </nav>
 
+      <div class="playlist-target">
+        <label for="playlistUrl">＋ の追加先</label>
+        <input id="playlistUrl" type="url" placeholder="Spotify のプレイリストリンク" aria-describedby="playlistHelp">
+        <button id="usePlaybackPlaylist" type="button">Desktop の再生元を使う</button>
+        <small id="playlistHelp">表示中のプレイリストは自動取得できません。共有リンクを貼るか、Desktop でそのプレイリストを再生して取得してください。</small>
+        <span id="playlistStatus" role="status"></span>
+      </div>
       <div id="toolbar">
         <label class="search-box" for="search">
           <span aria-hidden="true">⌕</span>

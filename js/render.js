@@ -19,7 +19,7 @@ function taskRow(task, showArtist) {
   if (task.count > 1) html += `<span class="dup">×${task.count}</span>`;
   html += '</div>';
   if (showArtist) html += `<div class="line2">${escapeHtml(task.artist)}</div>`;
-  html += '</div><span class="copyhint">クリックでコピー</span></div>';
+  html += `</div><button class="add-track" type="button" title="指定プレイリストに追加して再生" aria-label="${escapeHtml(task.title)}をプレイリストに追加して再生">＋</button><span class="copyhint">クリックでコピー</span></div>`;
   return html;
 }
 

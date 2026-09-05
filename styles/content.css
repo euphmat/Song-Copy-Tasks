@@ -135,3 +135,15 @@ main { max-inline-size: 1120px; margin-inline: auto; padding: 26px 20px 80px; }
   .fmtsel { inline-size: 100%; justify-content: flex-end; }
   #drop { padding-inline: 18px; }
 }
+
+/* Spotify playlist actions */
+.playlist-target { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-block-end: 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel); padding: 12px; }
+.playlist-target label { font-size: 12px; font-weight: 700; }
+.playlist-target input { flex: 1; min-inline-size: 160px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-soft); padding: 8px; }
+.playlist-target button { border-radius: 8px; background: var(--accent-soft); color: var(--accent); padding: 8px; font-size: 11px; }
+.playlist-target small, #playlistStatus { flex-basis: 100%; overflow-wrap: anywhere; font-size: 11px; color: var(--muted); }
+#playlistStatus:empty { display: none; }
+.task .add-track { flex: none; inline-size: 32px; block-size: 32px; border: 1px solid var(--accent-line); border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 21px; line-height: 1; }
+.task .add-track:hover { background: var(--accent); color: var(--accent-ink); }
+.task .add-track:disabled { opacity: .5; cursor: wait; }
+.tile .task .add-track { align-self: flex-end; }

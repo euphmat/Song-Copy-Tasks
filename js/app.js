@@ -1,7 +1,7 @@
-import { DEFAULT_LIST_FILE } from './config.js';
+import { DEFAULT_LIST_FILE, STORAGE_PREFIX } from './config.js';
 import { buildArtistGroups, isSong, parseSongText } from './parser.js';
 import { createRenderer } from './render.js';
-import { createSpotifyController } from './spotify.js';
+import { createSpotifyController, parsePlaylistId } from './spotify.js';
 import { loadLayout, restoreProgress, saveProgress, storeLayout } from './storage.js';
 import { setupThemePicker } from './theme.js';
 import { byId, debounce, decodeBuffer, fnvHash, formatNumber, truncate } from './utils.js';
@@ -68,6 +68,56 @@ const spotify = createSpotifyController({
 });
 
 void spotify.handleCallback();
+
+const playlistInput = byId('playlistUrl');
+const playlistStatus = byId('playlistStatus');
+const playlistKey = `${STORAGE_PREFIX}spotify-playlist`;
+try { playlistInput.value = localStorage.getItem(playlistKey) || ''; } catch (error) { /* unavailable */ }
+playlistInput.addEventListener('input', () => {
+  playlistStatus.textContent = '';
+  try { localStorage.setItem(playlistKey, playlistInput.value); } catch (error) { /* unavailable */ }
+});
+byId('usePlaybackPlaylist').addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    const id = await spotify.playbackPlaylist();
+    playlistInput.value = `https://open.spotify.com/playlist/${id}`;
+    playlistInput.dispatchEvent(new Event('input'));
+    playlistStatus.textContent = 'Desktop の再生元を追加先に設定しました';
+  } catch (error) { playlistStatus.textContent = error.message; }
+  finally { button.disabled = false; }
+});
+
+let addingTrack = false;
+const addedTracks = new Set();
+async function addTrack(task, button) {
+  if (addingTrack) return;
+  addingTrack = true;
+  button.disabled = true;
+  button.textContent = '…';
+  try {
+    const playlistId = parsePlaylistId(playlistInput.value);
+    const key = `${playlistId}:${task.artist}:${task.title}`;
+    if (addedTracks.has(key)) {
+      playlistStatus.textContent = 'この曲はこの操作ですでに追加済みです';
+      return;
+    }
+    playlistStatus.textContent = `追加中 — ${task.title}`;
+    const result = await spotify.addAndPlay(task, playlistId);
+    addedTracks.add(key);
+    if (state.tasks.includes(task)) setDone(task, true, false);
+    playlistStatus.textContent = result.played
+      ? `追加して再生しました — ${result.track.name}`
+      : `追加済み — ${result.track.name}。再生に失敗しました。曲の行をクリックして再生を再試行できます（${result.playbackError}）`;
+  } catch (error) {
+    playlistStatus.textContent = `${error.message}（通信エラーの場合は追加先を確認してから再試行してください）`;
+  } finally {
+    addingTrack = false;
+    button.disabled = false;
+    button.textContent = '＋';
+  }
+}
 
 async function playOnSpotify(task, text) {
   if (!spotify.isConnected()) return;
@@ -283,6 +333,11 @@ async function loadFile(file) {
 }
 
 elements.list.addEventListener('click', (event) => {
+  const addButton = event.target.closest('.add-track');
+  if (addButton) {
+    void addTrack(state.tasks[Number(addButton.closest('.task').dataset.id)], addButton);
+    return;
+  }
   const bulkButton = event.target.closest('.gbulk');
   if (bulkButton) {
     event.stopPropagation();
@@ -318,6 +373,7 @@ elements.list.addEventListener('click', (event) => {
 
 elements.list.addEventListener('keydown', (event) => {
   if (!['Enter', ' '].includes(event.key)) return;
+  if (event.target.closest('button')) return;
   const row = event.target.closest('.task');
   if (!row) return;
   event.preventDefault();
